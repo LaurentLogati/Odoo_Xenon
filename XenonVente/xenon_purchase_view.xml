@@ -9,10 +9,12 @@
                 <attribute name="invisible">True</attribute>    
             </xpath> 
             <xpath expr="//button[@name='print_quotation'][2]" position="attributes">   
-                <attribute name="invisible">True</attribute>    
+                <attribute name="invisible">True</attribute>  
+                
             </xpath> 
-            <xpath expr="//button[@name='button_confirm'][2]" position="attributes">   
-                <attribute name="states">tosend</attribute> 
+            <xpath expr="//button[@name='button_confirm'][2]" position="attributes">  
+                <attribute name="states">tosend</attribute>
+                <attribute name="attrs">{'invisible': [('origin', '!=', False)]}</attribute>
             </xpath> 
 			<button name="button_confirm" position="replace">
                 <button name="attente_client_confirm" 
