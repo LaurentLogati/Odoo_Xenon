@@ -86,6 +86,22 @@ class XenonPurchaseOrder(models.Model):
                 order.button_approve()
             else:
                 order.write({'state': 'to approve'})
+            # 1- Mise à jour de la liste de prix fournisseur
+            if not order.origin:
+                for line in self.order_line:
+                # Do not add a contact as a supplier
+                    partner = self.partner_id if not self.partner_id.parent_id else self.partner_id.parent_id
+                    if line.product_id and partner in line.product_id.seller_ids.mapped('name'):              
+                        # Convert the price in the right currency.
+                        currency = partner.property_purchase_currency_id or self.env.company.currency_id
+                        price = self.currency_id._convert(line.price_unit, currency, line.company_id, line.date_order or fields.Date.today(), round=False)
+                        if line.product_id.product_tmpl_id.uom_po_id != line.product_uom:
+                            default_uom = line.product_id.product_tmpl_id.uom_po_id
+                            price = line.product_uom._compute_price(price, default_uom)
+                        self.env['product.supplierinfo'].search([('name','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
+                    # Mise à jour du prix de vente dans la fiche article
+                    pourcentage=self.env['x_calculprix.detail'].search([('x_max','>=',price),('x_min','<=',price)]).x_marge
+                    self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).update({'list_price': price * (1 + (pourcentage/100))})
         return True
     
     
