@@ -1,0 +1,12 @@
+{
+    'name': 'Xenon Ventes',
+    'version': '1.0',
+	'author':"Laurent LOEZIC",
+    'category': 'Sales/Sales',
+    'summary': 'Process de vente et achat Xenon',
+	'depends':['sale', 'sale_purchase', 'sale_stock', 'purchase', 'product'],
+    'data': ['xenon_sale_view.xml','xenon_purchase_view.xml', 'xenon_calcul_prix_view.xml','ir.model.access.csv'],
+	'demo':[],
+    'installable': True,
+}
+
