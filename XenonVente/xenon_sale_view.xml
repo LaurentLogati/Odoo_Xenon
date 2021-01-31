@@ -18,17 +18,14 @@
                 <button name="action_confirmx" id="action_confirmx"
                         string="Confirmer" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', 'not in', ['sent'])]}"/>
-                <button name="action_dempx" id="action_dempx"
-                        string="DemandePx complement" class="btn-primary" type="object"
+                <button name="action_aenvoyerx" id="action_aenvoyerx"
+                        string="A envoyer" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', 'not in', ['wait'])]}"/>
 			</button>
             <xpath expr="//button[@name='action_quotation_send'][2]" position="attributes">   
                 <attribute name="invisible">True</attribute>        
             </xpath>  
             <xpath expr="//button[@name='action_quotation_send'][3]" position="attributes">   
-                <attribute name="invisible">True</attribute>        
-            </xpath> 
-            <xpath expr="//button[@name='action_quotation_send'][4]" position="attributes">   
                 <attribute name="invisible">True</attribute>        
             </xpath> 
             <button name="action_quotation_send" position="replace">

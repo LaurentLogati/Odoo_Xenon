@@ -114,8 +114,8 @@ class XenonSaleOrder(models.Model):
             'state': 'sale',
             'date_order': fields.Datetime.now()
         })
-        # Modification du statut de la commande frs liée##############################
-        cdefrs=self.env['purchase.order'].search([('origin','=', self.name)])
+        # Modification du statut de la commande frs liée - on ne met à jour que les commandes non annulées ##############################LLO
+        cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel')])             
         cdefrs.update({'state':'tosend'})
         
         # Context key 'default_name' is sometimes propagated up to here.
@@ -127,6 +127,11 @@ class XenonSaleOrder(models.Model):
             self.action_done()
         return True
     
+    def action_aenvoyerx(self):
+        #possibilité pour les comptables/advisor de forcer le devis en statut à envoyer
+        self.write({
+            'state': 'tosend',
+        })
       
 class XenonSaleOrderLine(models.Model):
     _inherit= 'sale.order.line'

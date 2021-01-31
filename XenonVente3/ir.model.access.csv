@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_calculprix,access_calculprix,model_x_calculprix,base.group_user,1,0,0,0
-access_calculprix_detail,access_calculprix_detail,model_x_calculprix_detail,base.group_user,1,0,0,0
-access_calculprix_manager,access_calculprix.manager,model_x_calculprix,sales_team.group_sale_manager,1,1,1,1
-access_calculprix_detail_manager,access_calculprix_detail.manager,model_x_calculprix_detail,sales_team.group_sale_manager,1,1,1,1

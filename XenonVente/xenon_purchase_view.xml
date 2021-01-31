@@ -9,8 +9,7 @@
                 <attribute name="invisible">True</attribute>    
             </xpath> 
             <xpath expr="//button[@name='print_quotation'][2]" position="attributes">   
-                <attribute name="invisible">True</attribute>  
-                
+                <attribute name="invisible">True</attribute>    
             </xpath> 
             <xpath expr="//button[@name='button_confirm'][2]" position="attributes">  
                 <attribute name="states">tosend</attribute>
