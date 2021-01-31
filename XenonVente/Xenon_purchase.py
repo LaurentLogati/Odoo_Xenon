@@ -46,7 +46,9 @@ class XenonPurchaseOrder(models.Model):
                         default_uom = line.product_id.product_tmpl_id.uom_po_id
                         price = line.product_uom._compute_price(price, default_uom)
                     self.env['product.supplierinfo'].search([('name','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
-                
+                else:
+                    raise UserError(_(str(partner.name) + " n''est pas associé au produit %s. Veuillez définir ce fournisseur dans la liste des prix des fournisseurs du produit.") % (line.product_id.display_name,))
+                        
         # 2- Mise à jour du prix de l'article dans le devis client 
         # le process a été modifié pour avoir une seule demande de prix frs pour un devis client cf Xenon_purchase_stock_rule
         # TODO recherche de la liste pourcentage en fonction des dates
