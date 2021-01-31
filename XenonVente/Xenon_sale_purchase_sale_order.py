@@ -282,7 +282,7 @@ class XenonSaleOrderLine(models.Model):
             partner_supplier = supplierinfo.name  # yes, this field is not explicit .... it is a res.partner !
 
             # determine (or create) PO
-            cde_origine = line.order_id.name
+            cde_origine = line.order_id.name ###LLO
             purchase_order = supplier_po_map.get(partner_supplier.id)
             if not purchase_order:
                 purchase_order = PurchaseOrder.search([
@@ -309,7 +309,8 @@ class XenonSaleOrderLine(models.Model):
             # add a PO line to the PO
             values = line._purchase_service_prepare_line_values(purchase_order, quantity=quantity)
             purchase_line = line.env['purchase.order.line'].create(values)
-
+            # Les articles de type service avec l'option de réapprovisionnement font l'objet d'une demande de prix
+            line.update({'x_px_maj':False}) ###LLO
             # link the generated purchase to the SO line
             sale_line_purchase_map.setdefault(line, line.env['purchase.order.line'])
             sale_line_purchase_map[line] |= purchase_line
