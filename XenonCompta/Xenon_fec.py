@@ -386,7 +386,9 @@ class XenonAccountFrFec(models.TransientModel):
             'target': 'self',
             }
         return action
-    
+
+    ####################################### Export Cabinet #######################################
+    # Pour le journal CABA (écritures de contrepassation des tva sur encaissement), on ne prend en compte que les comptes de TVA pour simplifier la révision des comptes
     
     def do_query_unaffected_earnings_cabinet(self):
         ''' Compute the sum of ending balances for all accounts that are of a type that does not bring forward the balance in new fiscal years.
@@ -566,7 +568,7 @@ class XenonAccountFrFec(models.TransientModel):
         SELECT
             'OUV' AS JournalCode,
             %s AS EcritureDate,
-            CASE WHEN rp.id IS NULL THEN MIN(aa.code) ELSE replace(replace(replace(replace(MIN(aa.code),'401000','08'),'411000','01'),'467020','08'),'411200','01') || rp.id END AS CompteNum,
+            CASE WHEN rp.id IS NULL THEN MIN(aa.code) ELSE MIN(aa.code) || '_' || rp.id END AS CompteNum,
             CASE WHEN aat.type IN ('receivable', 'payable')
             THEN COALESCE(replace(rp.name, '|', '-'), MIN(aa.name))
             ELSE ''
@@ -607,24 +609,17 @@ class XenonAccountFrFec(models.TransientModel):
             account_id = listrow.pop()
             rows_to_write.append(listrow)
 
-        # LINES aa.code || '_' || rp.id AS CompteNum,
+        # Libellé écriture ==> 1- libellé partenaire 2- libellé écriture 3- libellé compte
         sql_query = '''
         SELECT
             replace(replace(replace(replace(aj.code, '|', '-'), '\t', ''),'FACTU','AC'),'FAC','VE') AS JournalCode,
             TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
             CASE WHEN aat.type in ('receivable', 'payable') THEN 
-                (CASE WHEN rp.id IS NULL THEN aa.code ELSE replace(replace(replace(replace(aa.code,'401000','08'),'411000','01'),'467020','08'),'411200','01') || rp.id end) else aa.code end AS CompteNum,
-            CASE WHEN aat.type in ('receivable', 'payable') 
-                    THEN (CASE WHEN rp.id IS NULL THEN aa.name ELSE COALESCE(replace(replace(rp.name, '|', '-'), '\t', ''), '') END)
-                    ELSE
-                    CASE WHEN aml.name IS NULL OR aml.name = '' THEN aa.name
-                        WHEN aml.name SIMILAR TO '[\t|\s|\n]*' THEN aa.name
-                        ELSE replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';','') 
-                    END
-            END AS EcritureLib,
+                (CASE WHEN rp.id IS NULL THEN aa.code ELSE aa.code || '_' || rp.id end) else aa.code end AS CompteNum,
+            coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
             replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
             replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
-            replace(replace(am.name, '|', '-'), '\t', '') AS PieceRef,
+            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 10) AS PieceRef,
             CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
         FROM
             account_move_line aml
@@ -640,6 +635,7 @@ class XenonAccountFrFec(models.TransientModel):
             AND am.date <= %s
             AND am.company_id = %s
             AND (aml.debit != 0 OR aml.credit != 0)
+            and aj.code!='CABA'
         '''
 
         # For official report: only use posted entries
@@ -647,15 +643,51 @@ class XenonAccountFrFec(models.TransientModel):
             sql_query += '''
             AND am.state = 'posted'
             '''
+            
+        sql_query += '''
+        UNION ALL
+        SELECT
+            replace(replace(replace(replace(aj.code, '|', '-'), '\t', ''),'FACTU','AC'),'FAC','VE') AS JournalCode,
+            TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
+            CASE WHEN aat.type in ('receivable', 'payable') THEN 
+                (CASE WHEN rp.id IS NULL THEN aa.code ELSE aa.code || '_' || rp.id end) else aa.code end AS CompteNum,
+            coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
+            replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
+            replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
+            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 10) AS PieceRef,
+            CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
+        FROM
+            account_move_line aml
+            LEFT JOIN account_move am ON am.id=aml.move_id
+            LEFT JOIN res_partner rp ON rp.id=aml.partner_id
+            JOIN account_journal aj ON aj.id = am.journal_id
+            JOIN account_account aa ON aa.id = aml.account_id and substring(aa.code,1,3)='445'
+            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
+            LEFT JOIN res_currency rc ON rc.id = aml.currency_id
+            LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
+        WHERE
+            am.date >= %s
+            AND am.date <= %s
+            AND am.company_id = %s
+            AND (aml.debit != 0 OR aml.credit != 0)
+            AND am.state = 'posted'
+			and aj.code='CABA'
+        '''
+        
+         # For official report: only use posted entries
+        if self.export_type == "official":
+            sql_query += '''
+            AND am.state = 'posted'
+            '''
 
         sql_query += '''
         ORDER BY
-            am.date,
-            am.name,
-            aml.id
+            EcritureDate,
+			JournalCode,
+            PieceRef
         '''
         self._cr.execute(
-            sql_query, (self.date_from, self.date_to, company.id))
+            sql_query, (self.date_from, self.date_to, company.id,self.date_from, self.date_to, company.id))
 
         for row in self._cr.fetchall():
             rows_to_write.append(list(row))
