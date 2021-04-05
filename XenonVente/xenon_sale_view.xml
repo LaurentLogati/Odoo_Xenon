@@ -14,13 +14,17 @@
 			<button name="action_confirm" position="replace">
                 <button name="action_dempx" id="action_dempx"
                         string="DemandePx" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', 'not in', ['draft'])]}"/>
+                        attrs="{'invisible': [('state', 'not in', ['draft'])]}"
+                        confirm="Etes-vous sûr(e) d'avoir sélectionné le bon entrepôt ?"/>
                 <button name="action_confirmx" id="action_confirmx"
                         string="Confirmer" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', 'not in', ['sent'])]}"/>
                 <button name="action_aenvoyerx" id="action_aenvoyerx"
                         string="A envoyer" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', 'not in', ['wait'])]}"/>
+				<button name="action_confirmersansmailx" id="action_confirmersansmailx"
+                        string="Confirmer sans envoi mail" class="btn-primary" type="object"
+                        attrs="{'invisible': [('state', 'not in', ['tosend'])]}"/>
 			</button>
             <xpath expr="//button[@name='action_quotation_send'][2]" position="attributes">   
                 <attribute name="invisible">True</attribute>        

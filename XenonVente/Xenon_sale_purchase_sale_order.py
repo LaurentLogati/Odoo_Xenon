@@ -193,6 +193,8 @@ class XenonSaleOrderLine(models.Model):
         partner_supplier = supplierinfo.name
         fiscal_position_id = self.env['account.fiscal.position'].sudo().get_fiscal_position(partner_supplier.id)
         date_order = self._purchase_get_date_order(supplierinfo)
+        #recherche du type d'opération réception correspondant à l'entrepôt de la vente
+        type_operation_id = self.env['stock.picking.type'].search([('company_id','=',self.company_id.id),('active','=','t'),('warehouse_id','=',self.order_id.warehouse_id.id),('sequence_code','=','IN')]).id
         return {
             'partner_id': partner_supplier.id,
             'partner_ref': partner_supplier.ref,
@@ -203,6 +205,7 @@ class XenonSaleOrderLine(models.Model):
             'payment_term_id': partner_supplier.property_supplier_payment_term_id.id,
             'date_order': date_order,
             'fiscal_position_id': fiscal_position_id,
+            'picking_type_id': type_operation_id,
         }
 
     def _purchase_service_prepare_line_values(self, purchase_order, quantity=False):
@@ -294,6 +297,8 @@ class XenonSaleOrderLine(models.Model):
             if not purchase_order:
                 values = line._purchase_service_prepare_order_values(supplierinfo)
                 purchase_order = PurchaseOrder.create(values)
+                # Mise à jour de la commande en statut attentePrix (sinon la commande a déjà été mise à jour en statut à envoyer // ordre du code) 
+                self.env['sale.order'].search([('name','=',cde_origine)]).update({'state': 'wait'})
             else:  # update origin of existing PO
                 so_name = line.order_id.name
                 origins = []

@@ -30,10 +30,10 @@ class XenonSaleOrder(models.Model):
                 if not order.analytic_account_id:
                     order._create_analytic_account()
         #return True
-        # recherche des articles ayant fait l'objet d'une demande de prix
+        # recherche des articles ayant fait l'objet d'une demande de prix (demande de prix non annulée MEP_01.4)
         # les lignes d'articles qui n'auront pas fait l'objet de demande de prix seront mises à jour avec le flag de majpx à true
         for order in self:
-            commandefrs = self.env['purchase.order'].search([('origin', '=', order.name)])
+            commandefrs = self.env['purchase.order'].search([('origin', '=', order.name),('state', '!=', 'cancel')])
             list_art=[]
             for cde in commandefrs:
                 artcde=cde.env['purchase.order.line'].search([('order_id', '=', cde.id)])
@@ -75,7 +75,7 @@ class XenonSaleOrder(models.Model):
         return True
     
     def action_majstatut(self):
-        # Modification du statut de la commande frs liée##############################
+        # Modification du statut de la commande frs liée############################## non utilisée ?
         cdefrs=self.env['purchase.order'].search([('origin','=', self.name)])
         cdefrs.update({'state':'tosend'})
     
@@ -132,6 +132,15 @@ class XenonSaleOrder(models.Model):
         self.write({
             'state': 'tosend',
         })
+    
+    def action_confirmersansmailx(self):
+        #possibilité pour les comptables/advisor de forcer le devis en statut confirmer sans envoyer de mail
+        self.write({
+            'state': 'sale',
+        })
+        # Modification du statut de la commande frs liée - on ne met à jour que les commandes non annulées ##############################LLO
+        cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel')])             
+        cdefrs.update({'state':'tosend'})
       
 class XenonSaleOrderLine(models.Model):
     _inherit= 'sale.order.line'
