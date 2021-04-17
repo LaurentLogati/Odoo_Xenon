@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<template id="report_saleorder_document_xenon" inherit_id="sale.report_saleorder_document">
+  <xpath expr="/t/t/div[1]" position="after">
+	<div class="page">
+		<p style="page-break-after:always;">   </p>
+		<!--<p> Test New Page LLO </p>-->
+        
+        <div style="mso-element:para-border-div;border:solid windowtext 1.0pt;&#10;padding:5.0pt 5.0pt 5.0pt 5.0pt;mso-border-shadow:yes;background:#F2F2F2;&#10;mso-shading:white;mso-shading-themecolor:background1;mso-pattern:gray-5 auto">
+          <p class="EFLtitreacte" style="margin: 0cm 0cm 0pt; line-height: normal; background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial; text-align: center;">
+            <strong>
+            <span style="font-size:10.0pt">CONDITIONS GENERALES DE VENTE XENON GROUPE / FLY WEST LOISIRS<p/></span>
+            </strong>
+          </p>
+        </div>
+        
+        
+			<div class="row">
+				<div class="col-6">
+					<!--<span>New Column 1</span>-->
+                    
+                    
+                    <span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 1 - Champ d'application</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Les présentes Conditions Générales de Vente s'appliquent, sans restriction ni réserve à tout achat de Biens (notamment la vente d’aéronefs et de pièces détachées d’aéronefs) ou Services (notamment la maintenance et la réparation d’aéronefs, la gestion de navigabilité) (« Les Biens et/ou Services ») proposés par la Société Fly West Loisirs, SAS au capital de 5 000 € dont le siège social est situé 12 allée Raymond Bazin 85200 Fontenay le Comte, immatriculée au RCS de La Roche sur Yon sous le numéro 489 322 016 (« Le Vendeur ») aux Clients, qu’ils soient consommateurs, Clients non professionnels ou professionnels (« Les Clients ou le Client »).<br></br>Les caractéristiques principales des Biens ou Services, sont toujours présentées soit sur le catalogue du Vendeur, soit sur devis ou ordre de réparation préalable.<br></br>Le Client est tenu d'en prendre connaissance avant toute passation de commande ou acceptation de devis. Le choix et l'achat d'un Bien ou Service est de la seule responsabilité du Client.<br></br>Ces conditions s'appliquent à l'exclusion de toutes autres conditions, et notamment celles applicables pour d'autres circuits de commercialisation des Biens ou Services ou sur Internet.<br></br>Ces Conditions Générales de Vente sont systématiquement communiquées à tout Client préalablement à la conclusion du contrat de fourniture des Biens ou Services et prévaudront, le cas échéant, sur toute autre version ou tout autre document contradictoire.<br></br>Le Client déclare avoir pris connaissance des présentes Conditions Générales de Ventes et les avoir acceptées avant la conclusion du contrat de fourniture des Biens ou Services. La validation de la commande (ou l’acceptation du devis) de Biens ou Services par le Client vaut acceptation sans restriction ni réserve des présentes Conditions Générales de Vente.<br></br>Ces Conditions Générales de Vente pouvant faire l'objet de modifications ultérieures, la version applicable à l'achat du Client est celle en vigueur au jour de la conclusion du contrat.<br></br>Les Biens ou Services sont proposés également à la vente pour territoires étrangers. Si des droits de douane ou autres taxes locales ou droits d'importation ou taxes d'état sont susceptibles d'être exigibles, ils seront à la charge et relèvent de la seule responsabilité du Client.
+				</span>
+			</p>
+		</span>	
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 2 – Commandes - devis</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">		
+				<span style="font-size:6.0pt">Tous les Services comprenant des travaux de mécaniques commandés par le Client sont issus d’un bon de commande émis par le gestionnaire de la navigabilité de l’avion (propriétaire ou organisme de gestion de la navigabilité agréé, CAO ou CAMO). Le bon de commande dument signé est accompagné d’un devis estimatif du montant des travaux à réaliser. La signature du devis vaut acceptation des travaux commandés.<br></br>Afin de pouvoir anticiper les commandes de pièces, établir le plan de charge de l’atelier et respecter les échéances de maintenance établies par le programme d’entretien de l’aéronef, les bons de commandes doivent être établis au moins 10 jours avant le début prévisible des travaux.<br></br>Il appartient au Client de vérifier l'exactitude de la commande et de signaler immédiatement toute erreur.<br></br>La vente de Biens ou Services ne sera considérée comme définitive, qu'après l'envoi au Client de la confirmation de l'acceptation de la commande par le Vendeur ou réception de la signature du devis le Client, et dans tous les cas après encaissement par le Vendeur de l'intégralité du prix ou de l'intégralité de l'acompte dû. En particulier un acompte du montant des pièces sera demandé à la commande, pour tout montant supérieur à 1 000 € HT. Aucun travail de réparation ne sera effectué tant que la vente de Biens ou Services ne sera considérée définitive dans les conditions stipulées ci-avant.<br></br>Les devis établis par le Vendeur sont valables pendant une durée de 30 jours.<br></br>Les devis sont adressés par le Vendeur au Client par un logiciel de comptabilité dédié. Le Client s’oblige à ce titre à communiquer une adresse mail valide pour les échanges contractuels. Le devis peut être signé électroniquement en cliquant sur le lien présent dans le mail ou alors imprimé, et signé du Client avec la mention manuscrite « bon pour accord ».<br></br>Le Vendeur se réserve le droit d'annuler ou de refuser toute commande d'un Client avec lequel il existerait un litige relatif au paiement d'une commande antérieure.<br></br>La commande sur devis n'est considérée comme définitive par le Vendeur qu'après le versement d'un acompte dont le montant est fixé par le Vendeur à la commande.<br></br>Cet acompte ne pourra en aucun cas être qualifié d'arrhes.<br></br>Les éventuelles modifications de la commande par le Client, ne pourront être prises en compte par le Vendeur que dans la limite de ses possibilités et à condition d'être notifiées préalablement par écrit au Vendeur (avec un avis de réception postal ou électronique) dans les quarante-huit heures de la commande. En toutes hypothèses, le Vendeur ne garantit par le Client de pouvoir, dans ce délai, modifier une commande validée.<br></br>Le cas échéant, ces modifications donneront lieu à l'établissement d'un devis et à un ajustement du prix.<br></br>Si les modifications ne sont pas acceptées par le Vendeur car hors délai, ce dernier pourra exiger l’exécution de la vente de Biens ou Services et le paiement complet du prix et, dans tous les cas, l'acompte versé à la commande, tel que défini à l'article “Conditions de paiement” des présentes Conditions Générales de Vente sera de plein droit acquis au Vendeur et ne pourra donner lieu à un quelconque remboursement.<br></br>De même, en cas d'annulation de la commande par le Client après son acceptation par le Vendeur, pour quelque raison que ce soit hormis la force majeure, l'acompte versé à la commande, tel que défini à l'article “Conditions de paiement” des présentes Conditions Générales de Vente sera de plein droit acquis au Vendeur et ne pourra donner lieu à un quelconque remboursement, nonobstant la possibilité pour le Vendeur de solliciter l’exécution de la vente de Biens ou Services et le paiement complet du prix.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 3 - Tarifs</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Les Biens ou Services proposés par le Vendeur sont fournis aux tarifs en vigueur de ce dernier selon le devis établi par celui-ci, lors de l'enregistrement de la commande par le Vendeur. Les prix sont exprimés en Euros, HT et TTC.<br></br>Ces tarifs sont fermes et non révisables pendant leur période de validité, telle qu'indiqué sur le devis, celui-ci se réservant le droit, hors cette période de validité, de modifier les prix à tout moment.<br></br>Les prix figurant dans les devis, les tarifs généraux du Vendeur, ses circulaires, catalogues ou autres documents commerciaux (incluant les tarifs actualisés figurant sur les sites web/internet du Vendeur) sont susceptibles de fluctuations aussi bien à la hausse qu’à la baisse et ne comprennent pas, sauf mentions contraires, les frais de traitement et de gestion des commandes, de transport, de livraison et de droit de douanes le cas échéant, qui sont facturés en supplément, dans les conditions indiquées sur le catalogue tarif du Vendeur et calculés préalablement à la passation de la commande.<br></br>Le paiement demandé au Client correspond au montant total de l'achat, y compris ces frais.<br></br>Une facture est établie par le Vendeur et remise au Client lors de la fourniture des Biens ou Services commandés.
+				<p/></span>
+			</p>
+		</span>	
+		
+		
+		<span>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">délais suivant la constatation par le Vendeur du défaut ou du vice.<br></br>Le remboursement s'effectuera par crédit sur le compte bancaire du Client ou par chèque bancaire adressé au Client, ou par avoir.<br></br>La garantie du Vendeur est limitée au remboursement des Biens ou Services effectivement payés par le Client et le Vendeur ne pourra être considéré comme responsable ni défaillant pour tout retard ou inexécution consécutif à la survenance d'un cas de force majeure habituellement reconnu par la jurisprudence française.<br></br>Les Biens ou Services sont conformes à la réglementation en vigueur en France.<br></br>La responsabilité du Vendeur ne saurait être engagée en cas de non-respect de la législation du pays dans lequel les Biens ou Services sont fournis, qu'il appartient au Client, qui est seul responsable du choix des Biens ou Services demandés, de vérifier.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 7 - Propriété intellectuelle</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Le Vendeur reste propriétaire de tous les droits de propriété intellectuelle sur les études, dessins, modèles, prototypes, etc, réalisés (même à la demande du Client) en vue de la fourniture des Biens ou Services au Client.<br></br>Le Client s'interdit donc toute reproduction ou exploitation desdites études, dessins, modèles et prototypes, etc, sans l'autorisation expresse, écrite et préalable du Vendeur qui peut la conditionner à une contrepartie financière.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 8 - Imprévision</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Les présentes Conditions Générales de Vente excluent expressément le régime légal de l'imprévision prévu à l'article 1195 du Code civil pour toutes les opérations de Fourniture de Biens ou Services du Vendeur au Client. Sauf clause particulière des présentes, le Vendeur et le Client renoncent donc chacun à se prévaloir des dispositions de l'article 1195 du Code civil et du régime de l'imprévision qui y est prévu, s'engageant à assumer ses obligations même si l'équilibre contractuel se trouve bouleversé par des circonstances qui étaient imprévisibles lors de la conclusion de la vente, quand bien même leur exécution s'avèrerait excessivement onéreuse et à en supporter toutes les conséquences économiques et financières.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 9 - Exécution forcée en nature</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Par dérogation aux dispositions de l'article 1221 du Code civil, les Parties conviennent qu'en cas de manquement de l'une ou l'autre des Parties à ses obligations, la Partie victime de la défaillance ne pourra en demander l'exécution forcée en nature.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 10 - Exception d'inexécution</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Les Parties déclarent renoncer expressément à se prévaloir des dispositions des articles 1219 et 1220 du Code civil du régime de l'exception d'inexécution qui y est prévu.<br></br>Par conséquent, elles s'engagent à exécuter pleinement et intégralement les présentes même en cas de manquement de la part de l'une ou de l'autre.<br></br>Cependant, si l'empêchement était définitif ou perdurait au-delà d'un mois à compter de la constatation de l'empêchement par lettre recommandé avec AR ou exploit d'huissier, les présentes seraient purement et simplement résolues selon les modalités définies à l'article Résolution pour manquement d'une partie à ses obligations.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 11 - Force majeure</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Le Vendeur ne pourra être tenue pour responsables si la non-exécution ou le retard dans l'exécution de l'une quelconque de leurs obligations, telles que décrites dans les présentes découle d'un cas de force majeure, au sens de l'article 1218 du Code civil.<br></br>La Partie constatant l'événement devra sans délai informer l'autre Partie de son impossibilité à exécuter sa prestation et s'en justifier auprès de celle-ci. La suspension des obligations ne pourra en aucun cas être une cause de responsabilité pour non-exécution de l'obligation en cause, ni induire le versement de dommages et intérêts ou pénalités de retard.<br></br>L'exécution de l'obligation est suspendue pendant toute la durée de la force majeure si elle est temporaire et ne dépasse pas une durée de 45 jours. Par conséquent, dès la disparition de la cause de la suspension de leurs obligations réciproques, les Parties feront tous leurs efforts pour reprendre le plus rapidement possible l'exécution normale de leurs obligations contractuelles. A cet effet, la Partie empêchée avertira l'autre de la reprise de son obligation par lettre recommandée avec demande d'avis de réception ou tout acte extrajudiciaire. Si l'empêchement est définitif ou dépasse une durée de 45 jours, les présentes seront purement et simplement résolues selon les modalités définies à l'article «Résolution pour force majeure».
+				<p/></span>
+			</p>
+		</span>
+		
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 12 - Résolution du contrat</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt"><u>12-1 - Résolution pour force majeure</u><br></br>La résolution de plein droit pour force majeure, ne pourra, nonobstant la clause Résolution pour manquement d'une partie à ses obligations figurant ci-après, avoir lieu que 30 jours après l'envoi de la réception d'une mise en demeure notifiée par lettre recommandée avec demande d'avis de réception ou tout acte extrajudiciaire.<br></br>Toutefois, cette mise en demeure devra mentionner l'intention d'appliquer la présente clause.<br></br><u>12-2 - Résolution pour non-paiement</u><br></br>En cas de non-respect par le Client de son obligation de paiement du prix dans les conditions visées aux articles du présent contrat, celui-ci pourra être résolu au gré du Vendeur.<br></br>Il est expressément entendu que cette résolution pour manquement du Client à son obligation de paiement aura lieu de plein droit 15 jours après l'envoi de la réception d'une mise en demeure de s'exécuter, restée, en tout ou partie, sans effet. La mise en demeure pourra être notifiée par lettre recommandée avec demande d'avis de réception ou tout acte extrajudiciaire. Cette mise en demeure devra mentionner l'intention d'appliquer la présente clause, si bon semble au Vendeur.<br></br><u>12-3 - Dispositions communes aux cas de résolution</u><br></br>Il est expressément convenu entre les Parties que le débiteur d'une obligation de payer aux termes de la présente convention, sera valablement mis en demeure par la seule exigibilité de l'obligation, conformément aux dispositions de l'article 1344 du Code civil.
+				<p/></span>
+			</p>
+		</span>	
+                    
+                    
+                    
+                    
+                    
+				</div>
+				<div class="col-6">
+					<!--<span>New Column 2</span>-->
+                    
+                    <span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 4 - Conditions de paiement</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Un acompte correspondant à une partie convenue entre les Parties du prix total des Biens ou Services commandés est exigé lors de la passation de la commande par le Client.<br></br>Le solde du prix est payable au comptant, au jour de la fourniture desdits Biens ou Services, dans les conditions définies à l'article «Fourniture des Biens ou Services» ci-après.<br></br>Les paiements sont à effectuer en euros. Les modes de paiement sécurisés suivants sont utilisés :<br></br>-	par chèque bancaire.<br></br>-	par virement bancaire.<br></br>En cas de paiement par chèque bancaire, celui-ci doit être émis par une banque domiciliée en France métropolitaine ou à Monaco.<br></br>La mise à l'encaissement du chèque est réalisée à réception.<br></br>Cet acompte ne pourra en aucun cas être qualifié d'arrhes.<br></br>Le Vendeur ne sera pas tenu de procéder à la fourniture des Biens ou Services commandés par le Client si le prix ne lui a pas été préalablement réglé en totalité dans les conditions et ci-dessus indiquées.<br></br>Les paiements effectués par le Client ne seront considérés comme définitifs qu'après encaissement effectif des sommes dues par le Vendeur.<br></br>De convention expresse et sauf report sollicité par le Client avant la date d’exigibilité et accordé par le Vendeur, le défaut de paiement des factures à l’échéance fixée entrainera les dispositions suivantes :<br></br>	L’exigibilité immédiate de toutes les sommes restantes dues, quel que soit le mode de règlement prévu ;<br></br>	Toute somme non réglée à échéance donnera lieu à l’application d’un intérêt de retard d’un montant égal à trois fois le taux d’intérêt légal ;<br></br>	Une indemnité forfaitaire pour frais de recouvrement de 40 euros est applicable (en application du décret N°2012-1115 du 02/10/2012) en plus de la majoration prévue ci-dessus.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 5 - Fourniture de Biens ou Services</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">EXECUTION DES TRAVAUX<br></br>La fourniture de travaux mis en œuvre par le Vendeur correspond au bon de commande signé par le Client. Le Vendeur s’engage à exécuter ces travaux conformément aux recommandations des constructeurs d’avion. Compte tenu du caractère préventif des programmes d’entretien des avions, les travaux ordonnés dans le bon de commande correspondent la plupart du temps à des inspections. Aussi le remplacement des pièces trouvées défectueuses ou les travaux à engagés à la suite de défauts trouvés en cours d’inspection, feront l’objet de l’envoi d’un devis complémentaire. L’acceptation de ce devis conformément à la procédure décrite aux paragraphes « Commande-Devis » vaudra acceptation des travaux complémentaires. Comme pour la commande initiale, un acompte du montant des pièces sera demandé par le Vendeur.<br></br>DELAIS DE LIVRAISON<br></br>La livraison des Biens et/ou Services interviendra à la date indiquée sur le bon de commande.<br></br>Le Vendeur s'engage à faire ses meilleurs efforts pour fournir les Biens ou Services commandés par le Client dans le cadre d'une obligation de moyen et dans les délais ci-dessus précisés. Toutefois, ces délais sont communiqués à titre indicatif.<br></br>Le Vendeur peut être confronté à des circonstances indépendantes de sa volonté ou à des délais exceptionnels d’approvisionnement des pièces détachées. Dans une telle situation, la date de livraison sera décalée d’une durée équivalente et le Client sera tenu informé.<br></br>Tout dépassement de délais de livraison ne permet pas au Client d’annuler tout ou partie de ses commandes et/ou de refuser la livraison de tout ou partie des Biens ou Services et/ou de réclamer, y compris par voie de compensation, une quelconque indemnisation directe ou indirecte sous forme de dommages et intérêts, remboursement de frais ou autres paiements du moindre débours.<br></br>EXPEDITION DES PIECES<br></br>Les opérations de transport, assurances, douanes, manutention, etc... sont à la charge, aux frais, risques et périls du client à qui il appartient de vérifier les expéditions à l’arrivée des colis et d’exercer le cas échéant, les recours contre le transporteur ou contre le commissionnaire de transport ou le transitaire.<br></br>Les expéditions seront faites selon le mode de transport qui paraitra le plus adapté.<br></br>ENLEVEMENT<br></br>L’envoie de la facture constitue une mise à disposition des Biens et Services commandés. En cas de non enlèvement dans un délai de 15 jours et après l’envoi d’une lettre avec accusé de réception valant mise en demeure adressée au Client et mentionnant les frais de garde, l’avion sera considéré comme étant en garde aux frais du Client.<br></br>RECEPTION DES TRAVAUX<br></br>A la livraison des Biens et Services, s’agissant d’aéronefs, le mécanicien et le pilote qui récupère l’avion effectuent la réception des travaux qui ont été commandés par le bon de commande. Pour les visites majeures (1000 heures et 2000 heures) un vol de livraison contradictoire entre le Client et le mécanicien est réalisé. Le mécanicien explique les travaux réalisés. A l’issue, le vol de convoyage retour vaut acceptation des travaux.<br></br>Pour les vols qui suivent, si une anomalie directement liée aux travaux effectués est découverte, le Client prévient immédiatement l’atelier pour réaliser une analyse contradictoire afin de vérifier la relation de cause à effet entre l’anomalie et les travaux réalisés et les solutions à mettre en œuvre.
+				<p/></span>
+			</p>
+		</span>
+		
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 6 - Responsabilité du Vendeur - Garantie</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Le Vendeur garantit, conformément aux dispositions légales et sans paiement complémentaire, le Client, contre tout défaut de conformité ou vice caché, provenant d'un défaut de conception ou de réalisation des Biens ou Services commandés dans les conditions et selon les modalités définies ci-après.<br></br>Le Vendeur accorde une garantie équivalente à celle qui lui est donnée par les différents fabricants et Vendeurs qu’elle représente. Cette garantie ne couvre pas les frais de main d’œuvre résultant notamment des opérations de démontage, remontage, expertise, etc...<br></br>De convention expresse entre les parties, la responsabilité du Vendeur résultant d’un vice de fonctionnement du Bien est limité aux dispositions précédentes en ce qui concerne notamment les vices cachés et les dommages immatériels. Le Vendeur n’est tenu que par une obligation de moyens.<br></br>Afin de faire valoir ses droits, le Client devra informer le Vendeur, par écrit, de l'existence des vices ou défauts de conformité à moins de 25 heures de vol et au plus tard dans un délai maximum d’un mois à compter de la fourniture des Biens ou Services.<br></br>Sous réserve du respect des conditions particulières stipulées au paragraphe ci-avant, le Vendeur remboursera ou rectifiera ou fera rectifier (dans la mesure du possible) les Biens ou Services jugés défectueux dans les meilleurs 
+				<p/></span>
+			</p>
+		</span>
+
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 13 - Droit applicable - Langue</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Les présentes Conditions Générales de Vente et les opérations qui en découlent entre le Vendeur et le Client sont régies par et soumises au droit français.<br></br>Les présentes Conditions Générales de Vente sont rédigées en langue française.<br></br>Dans le cas où elles seraient traduites en une ou plusieurs langues étrangères, seul le texte français ferait foi en cas de litige.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 14 - Litiges</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Tous les litiges auxquels les opérations de Fourniture de Biens ou Services conclues en application des présentes conditions générales de vente pourraient donner lieu, concernant tant leur validité, leur interprétation, leur exécution, leur résolution ; leurs conséquences et leurs suites et qui n'auraient pas pu être résolus à l'amiable entre le Vendeur et le Client, seront soumis aux tribunaux compétents dans les conditions de droit commun. Néanmoins, si le Client est commerçant ou est une société commerciale, tous les litiges et différends susvisés devront être portés devant le Tribunal de commerce de LORIENT.<br></br>Le Client, est informé qu'il peut en tout état de cause recourir à une médiation conventionnelle, notamment auprès de la Commission de la médiation de la consommation (C. consom. art. L 612-1) ou auprès des instances de médiation sectorielles existantes, ou à tout mode alternatif de règlement des différends (conciliation, par exemple) en cas de contestation.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 15 - Information précontractuelle - Acceptation du Client</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Le Client reconnaît avoir eu communication, préalablement à l'achat immédiat ou à la passation de sa commande et à la conclusion du contrat, d'une manière claire et compréhensible, des présentes Conditions Générales de Vente et de toutes les informations listées à l'article L.221-5 du Code de la consommation et notamment les informations suivantes : <br></br>-	les caractéristiques essentielles du Bien ou Service; <br></br>-	le prix des Biens ou Services et des frais annexes (livraison, par exemple) ;<br></br>-	en l'absence d'exécution immédiate du contrat, la date ou le délai auquel le Vendeur s'engage à fournir les Biens ou Services commandés ; <br></br>-	les informations relatives à l'identité du Vendeur, à ses coordonnées postales, téléphoniques et électroniques, et à ses activités, si elles ne ressortent pas du contexte ; <br></br>-	les informations relatives aux garanties légales et contractuelles et à leurs modalités de mise en œuvre ; <br></br>-	les fonctionnalités du contenu numérique et, le cas échéant, à son interopérabilité ; <br></br>-	la possibilité de recourir à une médiation conventionnelle en cas de litige.<br></br>Le fait pour une personne physique (ou morale), d'effectuer un achat immédiat ou de commander un Bien ou Service emporte adhésion et acceptation pleine et entière des présentes Conditions Générales de Vente et obligation au paiement des Biens ou Services commandés, ce qui est expressément reconnu par le Client, qui renonce, notamment, à se prévaloir de tout document contradictoire, qui serait inopposable au Vendeur.
+				<p/></span>
+			</p>
+		</span>
+		<span>
+			<p class="EFLtitrearticle" style="margin-top:6.0pt;margin-right:0cm;margin-bottom:&#10;0cm;margin-left:0cm;line-height:normal">
+				<strong>
+				  <span style="font-size: 7pt;">ARTICLE 16 - Données personnelles - loi informatique et liberté</span>
+				</strong>
+			 </p>
+			 <p class="EFLnormal" style="margin-top:0cm;line-height:0.7">
+				<span style="font-size:6.0pt">Les données personnelles recueillies auprès des Clients font l'objet d'un traitement informatique réalisé par le Vendeur. Elles sont enregistrées dans son fichier Clients et sont indispensables au traitement de sa commande. Ces informations et données personnelles sont également conservées à des fins de sécurité, afin de respecter les obligations légales et réglementaires. Elles seront conservées aussi longtemps que nécessaire pour l'exécution des commandes et des garanties éventuellement applicables.<br></br>Le responsable du traitement des données est le Vendeur. L'accès aux données personnelles sera strictement limité aux employés du responsable de traitement, habilités à les traiter en raison de leurs fonctions. Les informations recueillies pourront éventuellement être communiquées à des tiers liés à l'entreprise par contrat pour l'exécution de tâches sous-traitées, sans que l'autorisation du Client soit nécessaire.<br></br>Dans le cadre de l'exécution de leurs prestations, les tiers n'ont qu'un accès limité aux données et ont l'obligation de les utiliser en conformité avec les dispositions de la législation applicable en matière de protection des données personnelles. En dehors des cas énoncés ci-dessus, le Vendeur s'interdit de vendre, louer, céder ou donner accès à des tiers aux données sans consentement préalable du Client, à moins d'y être contrainte en raison d'un motif légitime.<br></br>Si les données sont amenées à être transférées en dehors de l'UE, le Client en sera informé et les garanties prises afin de sécuriser les données (par exemple, adhésion du prestataire externe au « Privacy Shield », adoption de clauses types de protection validées par la CNIL, adoption d'un code de conduite, obtention d'une certification CNIL, etc.) lui seront précisées.<br></br>Conformément à la réglementation applicable, le Client dispose d'un droit d'accès, de rectification, d'effacement, et de portabilité des données le concernant, ainsi que du droit de s'opposer au traitement pour motif légitime, droits qu'il peut exercer en s'adressant au responsable de traitement à l'adresse postale ou email du Vendeur.<br></br>En cas de réclamation, le Client peut adresser une réclamation auprès du délégué à la protection des données personnelles du Vendeur.
+				<p/></span>
+			</p>
+		</span>
+                    
+                    
+                    
+                    
+                    
+                    
+				</div>
+			</div>
+	</div>  
+  </xpath>
+</template>
+  
+    
+</odoo>
