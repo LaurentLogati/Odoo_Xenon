@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<template id="sale_order_portal_template_xenon" inherit_id="sale.sale_order_portal_template">
+  <xpath expr="//form[@id='accept']" position="replace">
+    <form id="accept" method="POST" t-att-data-order-id="sale_order.id" t-att-data-token="sale_order.access_token" class="js_accept_json modal-content js_website_submit_form">
+        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+        <header class="modal-header">
+            <h4 class="modal-title">Validate Order</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">&amp;times;</button>
+        </header>
+        <main class="modal-body" id="sign-dialog">
+            <p>
+                <span>By signing this proposal, I agree to the following terms:</span>
+                <ul>
+                    <li><span>Accepted on the behalf of:</span> <b t-field="sale_order.partner_id.commercial_partner_id"/></li>
+                    <li><span>For an amount of:</span> <b data-id="total_amount" t-field="sale_order.amount_total"/></li>
+                    <li t-if="sale_order.payment_term_id"><span>With payment terms:</span> <b t-field="sale_order.payment_term_id.note"/></li>
+                </ul>
+                <span><b>En signant ce devis, je déclare également avoir pris connaissance et accepté les termes et les <u>conditions générales de vente</u> figurant sur chaque face du document</b></span>
+            </p>
+            <t t-call="portal.signature_form">
+                <t t-set="call_url" t-value="sale_order.get_portal_url(suffix='/accept')"/>
+                <t t-set="default_name" t-value="sale_order.partner_id.name"/>
+            </t>
+        </main>
+    </form>
+  </xpath>
+</template>
+</odoo>

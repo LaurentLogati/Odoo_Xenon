@@ -75,7 +75,7 @@ class XenonSaleOrder(models.Model):
         return True
     
     def action_majstatut(self):
-        # Modification du statut de la commande frs liée############################## non utilisée ?
+        # Modification du statut de la commande frs liée############################## utilisée lors de la validation du devis sur le portail web
         cdefrs=self.env['purchase.order'].search([('origin','=', self.name)])
         cdefrs.update({'state':'tosend'})
     
