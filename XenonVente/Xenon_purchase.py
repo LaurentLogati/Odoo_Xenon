@@ -29,6 +29,32 @@ class XenonPurchaseOrder(models.Model):
         ('cancel', 'Cancelled')
     ], string='Status', readonly=True, index=True, copy=False, default='draft', tracking=True)
     
+    
+    def write(self, vals):
+        res = super(XenonPurchaseOrder, self).write(vals)
+        
+        # MEP_05.1 Suppression des followers/abonnés attachés à un devis pour ne pas leur envoyer de mail lors du changement de frs
+        
+        #recherche partenaire actuel
+        #partnercurrentuser=self.env.user.partner_id
+        
+        #liste des utilisateurs
+        partneruser=self.env['res.users'].search([('login', '!=', 'xyz')]).partner_id #liste des users
+        #liste des followers du devis en cours
+        followersPCH=self.env['mail.followers'].search([('res_model','=','purchase.order'),('res_id','=',self.id)])
+
+        #liste des followers ne correspondant pas à un utilisateur (pour n'avoir que des fournisseurs)
+        followersdevis=followersPCH.partner_id - partneruser
+        
+        for follower in followersdevis:
+            #suppression des followers/abonnés précédents si différent du frs du devis
+            if follower.id != self.partner_id.id:
+                followersPCH.search([('partner_id', '=', follower.id)]).unlink()
+        # fin MEP_05.1
+        
+        if vals.get('date_planned'):
+            self.order_line.filtered(lambda line: not line.display_type).date_planned = vals['date_planned']
+        return res
 
 
     def attente_client_confirm(self):
