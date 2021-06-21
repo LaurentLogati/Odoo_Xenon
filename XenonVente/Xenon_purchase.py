@@ -49,7 +49,7 @@ class XenonPurchaseOrder(models.Model):
         for follower in followersdevis:
             #suppression des followers/abonnés précédents si différent du frs du devis
             if follower.id != self.partner_id.id:
-                followersPCH.search([('partner_id', '=', follower.id)]).unlink()
+                followersPCH.search([('partner_id', '=', follower.id)]).sudo().unlink()
         # fin MEP_05.1
         
         if vals.get('date_planned'):
