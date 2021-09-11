@@ -161,8 +161,9 @@ class XenonSaleOrderLine(models.Model):
     def _maj_ligne_sans_dem_px(self,list_art):
         for line in self:
             if line.product_id.id not in list_art:
-                prixvente=self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).list_price
-                line.update({'price_unit':prixvente,'x_px_maj':True})
+                if line.product_id.type!='service':
+                    prixvente=self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).list_price
+                    line.update({'price_unit':prixvente,'x_px_maj':True})
                 
 
 
