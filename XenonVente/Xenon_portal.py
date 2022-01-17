@@ -18,7 +18,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-
+#remplace odoo\addons\sale\controllers\portal.py
 class XenonCustomerPortal(CustomerPortal):
 
     @http.route(['/my/orders/<int:order_id>/accept'], type='json', auth="public", website=True)
