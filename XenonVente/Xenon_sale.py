@@ -78,6 +78,9 @@ class XenonSaleOrder(models.Model):
         # Modification du statut de la commande frs liée############################## utilisée lors de la validation du devis sur le portail web
         cdefrs=self.env['purchase.order'].search([('origin','=', self.name)])
         cdefrs.update({'state':'tosend'})
+        #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
+        for ligne in cdefrs.order_line:
+            ligne.update({'account_analytic_id':self.analytic_account_id})
     
     
     @api.returns('mail.message', lambda value: value.id)
@@ -118,6 +121,10 @@ class XenonSaleOrder(models.Model):
         cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel')])             
         cdefrs.update({'state':'tosend'})
         
+        #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
+        for ligne in cdefrs.order_line:
+            ligne.update({'account_analytic_id':self.analytic_account_id})
+        
         # Context key 'default_name' is sometimes propagated up to here.
         # We don't need it and it creates issues in the creation of linked records.
         context = self._context.copy()
@@ -141,6 +148,9 @@ class XenonSaleOrder(models.Model):
         # Modification du statut de la commande frs liée - on ne met à jour que les commandes non annulées ##############################LLO
         cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel')])             
         cdefrs.update({'state':'tosend'})
+        #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
+        for ligne in cdefrs.order_line:
+            ligne.update({'account_analytic_id':self.analytic_account_id})
       
 class XenonSaleOrderLine(models.Model):
     _inherit= 'sale.order.line'

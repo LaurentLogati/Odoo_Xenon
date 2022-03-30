@@ -99,7 +99,8 @@ class XenonPurchaseOrder(models.Model):
                                     ligne.update({'price_unit':price * (1 + (pourcentage/100)), 'x_px_maj':True})
                                     pxtousok=pxtousok-1
                                     # Mise à jour du prix de vente dans la fiche article
-                                    self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).update({'list_price': price * (1 + (pourcentage/100))})
+                                    # Mise à jour coût avec le dernier px d'achat /!\ attention ne met à jour que pour la société en cours pour le coût !!!!!!! ### MEP_07.1 
+                                    self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).update({'list_price': price * (1 + (pourcentage/100)),'standard_price': price})
 
             #Changement du statut du devis client A envoyer
             if pxtousok==0:
@@ -135,8 +136,9 @@ class XenonPurchaseOrder(models.Model):
                             price = line.product_uom._compute_price(price, default_uom)
                         self.env['product.supplierinfo'].search([('name','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
                     # Mise à jour du prix de vente dans la fiche article
+                    # + Mise à jour coût avec le dernier px d'achat /!\ attention ne met à jour que pour la société en cours pour le coût !!!!!!! ### MEP_07.1
                     pourcentage=self.env['x_calculprix.detail'].search([('x_max','>=',price),('x_min','<=',price)]).x_marge
-                    self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).update({'list_price': price * (1 + (pourcentage/100))})
+                    self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).update({'list_price': price * (1 + (pourcentage/100)),'standard_price': price})
         return True
     
     
