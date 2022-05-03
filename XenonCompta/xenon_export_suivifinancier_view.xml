@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    
+<record id="account_fr_suivifinancier_action" model="ir.actions.act_window">
+    <field name="name">XenonSuiviFinancier</field>
+    <field name="res_model">x.suivifinancier</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+</record>
+
+
+
+<record id="account_fr_suivifinancier_view_xenon" model="ir.ui.view">
+    <field name="name">account.fr.suivifinancier.form.xenon</field>
+    <field name="model">x.suivifinancier</field>
+    <field name="arch" type="xml">
+        <form string="Suivi Financier File Generation">
+            <notebook>
+                <page string="Options">
+                    <group>
+                        <field name="x_date_from"/>
+                        <field name="x_date_to"/>
+                        <!--<field name="x_export_type" groups="base.group_no_one"/>-->
+                    </group>
+                </page>
+            </notebook>
+            <footer>
+                <button string="GenerateTEST" name="generate_export_suivifinancier_xenon" type="object"
+                    class="oe_highlight"/>
+                <button string="Cancel" class="btn btn-secondary" special="cancel"/>
+            </footer>
+        </form>
+    </field>
+</record>
+
+
+<!--<menuitem id="menu_finance_LLO" name="AnalyseXenonLLO" parent="account_accountant.menu_finance" sequence="80" groups="account.group_account_user"/>-->
+<!--<menuitem id="menu_xenonLLO" name="XenonLLO" parent="menu_finance_LLO" sequence="90" groups="account.group_account_manager"/> -->
+    <menuitem id="menu_xenonLLO" name="XenonLLO" parent="studio_customization.accounting_xenon_7b55daff-03d4-4666-b7a5-11d90ae2a9a3" sequence="90" groups="account.group_account_manager"/>
+    <!--parent : configuration/technique/menu + afficher les métadonnées-->
+    <!--parent="account.account_account_menu" - Menu configuration-->
+    <!--parent="account.menu_finance_reports" - Menu analyse-->
+    <!--parent="account.menu_finance" - Module facturation-->
+
+        <!--parent="account.menu_finance_configuration"-->
+<menuitem id="Suivifinancier_menu"
+        name="Suivifinancier"
+        parent="menu_xenonLLO"
+        action="account_fr_suivifinancier_action"
+        sequence="1"/>
+
+</odoo>
