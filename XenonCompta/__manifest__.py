@@ -5,7 +5,7 @@
     'category': 'Account',
     'summary': 'Editions et export',
 	'depends':['l10n_fr_fec'],
-    'data': ['xenon_export_cabinet_view.xml'],
+    'data': ['xenon_export_cabinet_view.xml', 'xenon_export_suivifinancier_view.xml', 'xenon_budget_view.xml','ir.model.access.csv'],
 	'demo':[],
     'installable': True,
 }
