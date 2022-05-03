@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+      
+    <record id="view_budget_list_xenon" model="ir.ui.view">
+                <field name="name">budget.liste.xenon</field>
+                <field name="model">x_budget</field>
+                <field name="arch" type="xml">
+                    <tree>
+                        <field name="x_libelle"/>
+						<field name="x_company_id"/>
+                        <field name="x_datedebut"/>
+                        <field name="x_datefin"/>
+                    </tree>
+                </field>
+    </record>
+      
+    <record id="view_calculpx_form_xenon" model="ir.ui.view">
+                <field name="name">budget.form.xenon</field>
+                <field name="model">x_budget</field>
+                <field name="arch" type="xml">
+                    <form>
+                        <group>
+                        <field name="x_libelle"/>
+						<field name="x_company_id"/>
+                        <field name="x_datedebut"/>
+                        <field name="x_datefin"/>
+                        <!--<field name="x_exercice"/>
+                        <field name="x_actif"/>
+                        <field name="x_statut"/>
+                        <field name="x_priorite"/>
+                        <field name="x_prevision"/>
+                        <field name="x_analytique"/>
+                        <field name="x_projet"/>
+                        <field name="x_contact"/>-->
+                        </group>
+                        <notebook>
+                            <page string="Detail">
+                                <field name="x_detail_id">
+                                    <form>
+                                        <group>
+                                        <field name="x_compte"/>
+                                        <field name="x_montant_1"/>
+                                        <field name="x_montant_2"/>
+										<field name="x_montant_3"/>
+										<field name="x_montant_4"/>
+										<field name="x_montant_5"/>
+										<field name="x_montant_6"/>
+										<field name="x_montant_7"/>
+										<field name="x_montant_8"/>
+										<field name="x_montant_9"/>
+										<field name="x_montant_10"/>
+										<field name="x_montant_11"/>
+										<field name="x_montant_12"/>
+                                        </group>
+                                    </form>
+                                    <tree>
+                                        <field name="x_compte"/>
+                                        <field name="x_montant_1"/>
+                                        <field name="x_montant_2"/>
+										<field name="x_montant_3"/>
+										<field name="x_montant_4"/>
+										<field name="x_montant_5"/>
+										<field name="x_montant_6"/>
+										<field name="x_montant_7"/>
+										<field name="x_montant_8"/>
+										<field name="x_montant_9"/>
+										<field name="x_montant_10"/>
+										<field name="x_montant_11"/>
+										<field name="x_montant_12"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </form>
+                </field>
+    </record>
+
+      
+    <record model="ir.actions.act_window" id="budget_action">
+      <field name="name">XenonBudget</field>
+      <field name="res_model">x_budget</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+      
+    <!--<menuitem id="menu_xenon" name="Xenon" parent="account.menu_finance" sequence="90" groups="account.group_account_manager"/>-->
+      
+    <menuitem id="budget_menu"
+        name="BudgetXenon"
+        parent="menu_xenonLLO"
+        action="budget_action"
+        sequence="20"/>
+      
+  </data>
+</odoo>
+
+<!--parent="studio_customization.comptabilite_xenon_86eec991-662c-4e1e-9e3e-0f874bbf9d17"-->
+
