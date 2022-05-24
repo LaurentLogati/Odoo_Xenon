@@ -76,7 +76,7 @@ class XenonSaleOrder(models.Model):
     
     def action_majstatut(self):
         # Modification du statut de la commande frs liée############################## utilisée lors de la validation du devis sur le portail web
-        cdefrs=self.env['purchase.order'].search([('origin','=', self.name)])
+        cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('company_id','=', self.company_id.id)])
         cdefrs.update({'state':'tosend'})
         #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
         for ligne in cdefrs.order_line:
@@ -118,7 +118,7 @@ class XenonSaleOrder(models.Model):
             'date_order': fields.Datetime.now()
         })
         # Modification du statut de la commande frs liée - on ne met à jour que les commandes non annulées ##############################LLO
-        cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel')])             
+        cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel'), ('company_id','=', self.company_id.id)])             
         cdefrs.update({'state':'tosend'})
         
         #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
@@ -146,7 +146,7 @@ class XenonSaleOrder(models.Model):
             'state': 'sale',
         })
         # Modification du statut de la commande frs liée - on ne met à jour que les commandes non annulées ##############################LLO
-        cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel')])             
+        cdefrs=self.env['purchase.order'].search([('origin','=', self.name), ('state', '!=', 'cancel'), ('company_id','=', self.company_id.id)])             
         cdefrs.update({'state':'tosend'})
         #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
         for ligne in cdefrs.order_line:
