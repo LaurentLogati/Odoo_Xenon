@@ -147,6 +147,44 @@ class XenonPurchaseOrder(models.Model):
         self.filtered(lambda p: p.company_id.po_lock == 'lock').write({'state': 'done'})
         return {}
 
+    def button_acompte(self):
+        view_id = self.env.ref('account.view_account_payment_form').id
+
+        ArticleCore = self.env['x_parametrage'].search([('x_code','=','ARTCORE')]).x_valeur
+
+        CommandeCore = self.env['purchase.order.line'].search([('order_id','=',self.id), ('product_id','=',int(ArticleCore))])
+        
+        if CommandeCore:
+            return {
+                'name':'Acompte fournisseur',
+                'view_type':'form',
+                'view_mode':'tree',
+                'views' : [(view_id,'form')],
+                'res_model':'account.payment',
+                'view_id':view_id,
+                'type':'ir.actions.act_window',
+                #'res_id':self.id,
+                'target':'new',
+                #'context':context,
+                'context':{'default_payment_type':'outbound', 'default_partner_type':'supplier', 'default_partner_id':self.partner_id.id, 'default_communication':self.name
+                           , 'default_x_acomptefrs':'t', 'default_x_acomptecore':'t'}
+            }
+        else:
+            return {
+                'name':'Acompte fournisseur',
+                'view_type':'form',
+                'view_mode':'tree',
+                'views' : [(view_id,'form')],
+                'res_model':'account.payment',
+                'view_id':view_id,
+                'type':'ir.actions.act_window',
+                #'res_id':self.id,
+                'target':'new',
+                #'context':context,
+                'context':{'default_payment_type':'outbound', 'default_partner_type':'supplier', 'default_partner_id':self.partner_id.id, 'default_communication':self.name
+                           , 'default_x_acomptefrs':'t'}
+            }
+
             
       
 
