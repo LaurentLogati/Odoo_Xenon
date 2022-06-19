@@ -25,6 +25,12 @@
             <button name="button_cancel" position="replace">
                 <button name="button_cancel" states="draft,to approve,sent,wait,tosend,purchase" string="Annuler" type="object" />
             </button>
+			<button name="button_done" position="after">
+                <button name="button_acompte" 
+                        type="object" 
+                        string="Acompte frs" 
+                        states="purchase"/>
+            </button> 
             <field name="state" position="replace">
 				<field name="state" widget="statusbar" statusbar_visible="draft,sent,wait,tosend,purchase" readonly="1"/>
             </field>
