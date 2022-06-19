@@ -5,3 +5,5 @@ access_budget_manager,access_budget.manager,model_x_budget,sales_team.group_sale
 access_budget_detail_manager,access_budget_detail.manager,model_x_budget_detail,sales_team.group_sale_manager,1,1,1,1
 access_suivifinancier,access_suivifinancier,model_x_suivifinancier,base.group_user,1,0,0,0
 access_suivifinancier_manager,access_suivifinancier.manager,model_x_suivifinancier,sales_team.group_sale_manager,1,1,1,1
+access_parametrage,access_parametrage,model_x_parametrage,base.group_user,1,0,0,0
+access_parametrage_manager,access_parametrage.manager,model_x_parametrage,sales_team.group_sale_manager,1,1,1,1
