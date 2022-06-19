@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+      
+    <record id="view_parametrage_xenon" model="ir.ui.view">
+                <field name="name">parametrage.xenon</field>
+                <field name="model">x_parametrage</field>
+                <field name="arch" type="xml">
+                    <tree>
+                        <field name="x_code"/>
+						<field name="x_libelle"/>
+                        <field name="x_valeur"/>
+                        <field name="x_commentaire"/>
+                        <field name="x_company_id"/>
+                        <!--<field name="x_actif"/>-->
+                    </tree>
+                </field>
+    </record>
+      
+      
+          
+    <record model="ir.actions.act_window" id="parametrage_action">
+      <field name="name">XenonParametrage</field>
+      <field name="res_model">x_parametrage</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+      
+    <!--<menuitem id="menu_xenon" name="Xenon" parent="account.menu_finance" sequence="90" groups="account.group_account_manager"/>-->
+      
+    <menuitem id="parametrage_menu"
+        name="ParametrageXenon"
+        parent="menu_xenonLLO"
+        action="parametrage_action"
+        sequence="1"/>
+      
+  </data>
+</odoo>
+
+
