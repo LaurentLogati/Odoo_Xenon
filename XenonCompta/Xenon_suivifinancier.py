@@ -169,53 +169,55 @@ class XenonSuiviFinancier(models.TransientModel):
             u'JournalCode',    # 0
             u'EcritureDate',   # 1
             u'CompteNum',      # 2
-            u'EcritureLib',    # 3
-            u'Debit',          # 4
-            u'Credit',         # 5
-            u'Balance',        # 6
-            u'PieceRef',       # 7
-            u'EcritureLet',    # 8
-            u'CatResBilan',    # 9
-            u'Societe',        # 10
-            u'Exercice',       # 11
-            u'Tiers',          # 12
-            u'TiersID',        # 13 agId juste pour info-----
-            u'CodeAna',        # 14
-            u'Affaire',        # 15
-            u'CodeAtelier',        # 16
-            u'Atelier',        # 17
-            u'Idclientliv',        # 18
-            u'Clientliv',        # 19
-            u'Devisclient',        # 20
-            u'Id_article',        # 21
-            u'Default_code',        # 22
-            u'id2_article',        # 23
-            u'article',        # 24
-            u'typearticle',        # 25
-            u'idmove',        # 26
-            u'ref',        # 27
-            u'state',        # 28
-            u'type',        # 29
-            u'invoice_origin',        # 30
-            u'invoice_partner_display_name',        # 31
-            u'idmoveline',        # 32
-            u'sequence',        # 33
-            u'name',        # 34
-            u'quantity',        # 35
-            u'price_unit',        # 36
-            u'discount',        # 37
-            u'price_subtotal',        # 38
-            u'display_type',        # 39---
-            u'SensBalance',    # 14
-            u'SensSoldeTiers', # 15
-            u'AnneeMois',      # 16
-            u'DebitBudget',    # 17
-            u'CreditBudget',   # 18
-            u'MontantBudget',  # 19
-            u'Etat',           # 20
-            u'TypeLigne',      # 21
-            u'SIG',            # 22
-            u'textefin',       # 23
+            u'CompteLib',      # 3
+            u'EcritureLib',    # 4
+            u'Debit',          # 5
+            u'Credit',         # 6
+            u'Balance',        # 7
+            u'PieceRef',       # 8
+            u'EcritureLet',    # 9
+            u'CatResBilan',    # 10
+            u'Societe',        # 11
+            u'Exercice',       # 12
+            u'Tiers',          # 13
+            u'TiersID',        # 14 agId juste pour info-----
+            u'CodeAna',        # 15
+            u'Affaire',        # 16
+            u'CodeAtelier',        # 17
+            u'Atelier',        # 18
+            u'Idclientliv',        # 19
+            u'Clientliv',        # 20
+            u'Devisclient',        # 21
+            u'Id_article',        # 22
+            u'Default_code',        # 23
+            u'id2_article',        # 24
+            u'article',        # 25
+            u'typearticle',        # 26
+            u'idmove',        # 27
+            u'ref',        # 28
+            u'state',        # 29
+            u'type',        # 30
+            u'invoice_origin',        # 31
+            u'invoice_partner_display_name',        # 32
+            u'idmoveline',        # 33
+            u'sequence',        # 34
+            u'name',        # 35
+            u'quantity',        # 36
+            u'price_unit',        # 37
+            u'discount',        # 38
+            u'price_subtotal',        # 39
+            u'display_type',        # 40---
+            u'SensBalance',    # 41
+            u'SensSoldeTiers', # 42
+            u'AnneeMois',      # 43
+            u'DebitBudget',    # 44
+            u'CreditBudget',   # 45
+            u'MontantBudget',  # 46
+            u'Etat',           # 47
+            u'TypeLigne',      # 48
+            u'SIG',            # 49
+            u'MontantM',       # 50
+            u'textefin',       # 51
             ]
 
         rows_to_write = [header]
@@ -236,6 +238,7 @@ class XenonSuiviFinancier(models.TransientModel):
             'OUV' AS JournalCode,
             EF.date_from AS EcritureDate,
             MIN(aa.code) AS CompteNum,
+            replace(replace(MIN(aa.name), '|', ''), '\t', '') AS CompteLib,
             replace(replace(MIN(aa.name), '|', ''), '\t', '') AS EcritureLib,
             CASE WHEN sum(aml.balance) <= 0 THEN 0 ELSE SUM(aml.balance) END AS Debit,
             CASE WHEN sum(aml.balance) >= 0 THEN 0 ELSE -SUM(aml.balance) END AS Credit, 
@@ -312,6 +315,7 @@ class XenonSuiviFinancier(models.TransientModel):
             'OUV' AS JournalCode,
             EF.date_from AS EcritureDate,
             MIN(aa.code) AS CompteNum,
+            replace(replace(MIN(aa.name), '|', ''), '\t', '') AS CompteLib,
             CASE WHEN aat.type IN ('receivable', 'payable')
             THEN COALESCE(replace(rp.name, '|', '-'), MIN(aa.name))
             ELSE ''
@@ -395,19 +399,36 @@ class XenonSuiviFinancier(models.TransientModel):
         group by so.warehouse_id, swso.name, so.analytic_account_id, aac.name, so.company_id, so.partner_id, so.name--, so.partner_invoice_id
         )
         '''
+        
+        # Francisation des types d'écritures
+        sql_query += '''
+        , TypeEcriture as (
+        select type as typeO, 
+        case when type='entry' then 'ecriture' 
+        when type='out_invoice' then 'facture_client' 
+        when type='in_invoice' then 'facture_frs'
+        when type='out_refund' then 'avoir_client'
+        when type='in_refund' then 'avoir_frs'
+        else 'autre' end as typeF
+        from account_move
+        group by type
+        )
+        '''
 
         # Libellé écriture ==> 1- libellé partenaire 2- libellé écriture 3- libellé compte
+        # substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 10) AS PieceRef,
         sql_query += '''
         , Ecritures as (
         SELECT
             replace(replace(replace(replace(aj.code, '|', '-'), '\t', ''),'FACTU','AC'),'FAC','VE') AS JournalCode,
             am.date AS EcritureDate,
             aa.code AS CompteNum,
+            aa.name AS CompteLib,
             coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
             CASE WHEN sum(aml.balance) <= 0 THEN 0 ELSE SUM(aml.balance) END AS Debit,
             CASE WHEN sum(aml.balance) >= 0 THEN 0 ELSE -SUM(aml.balance) END AS Credit, 
             sum(aml.balance) AS Balance, 
-            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 10) AS PieceRef,
+            replace(replace(am.name, '|', '-'), '\t', '') AS PieceRef,
             CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet,
             case when ag.name is null then '' else ag.name end AS CatResBilan,
             rcomp.name as Societe,
@@ -421,7 +442,9 @@ class XenonSuiviFinancier(models.TransientModel):
 			affat.idclientliv as idclientliv, rpliv.name as clientliv, affat.devisclient as devisclient, --, affat.clientfact,
 			--am.partner_shipping_id as idclientliv, am.partner_id as idclientfact, rpliv.name as clientliv,
 			pp.id as id_article, pp.default_code, pt.id as id2_article, pt.name as article, pt.type as typearticle,
-			am.id as idmove, replace(replace(am.ref,';',''),',','') as ref, am.state, am.type, am.invoice_origin, am.invoice_partner_display_name,
+			am.id as idmove, replace(replace(am.ref,';',''),',','') as ref, am.state, 
+            te.typeF, 
+            am.invoice_origin, am.invoice_partner_display_name,
 			aml.id as idmoveline, aml.sequence, replace(replace(replace(aml.name,chr(10),''),';',''),',','') as name,
 			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
         FROM
@@ -446,6 +469,8 @@ class XenonSuiviFinancier(models.TransientModel):
 			left join product_product pp on pp.id=aml.product_id
 			left join product_template pt on pt.id =pp.product_tmpl_id
 			left join res_partner rpliv ON rpliv.id=so.partner_id--am.partner_shipping_id
+            left join TypeEcriture te on te.typeO=am.type
+            
         WHERE
             am.date >= %s
             AND am.date <= %s
@@ -463,14 +488,14 @@ class XenonSuiviFinancier(models.TransientModel):
             
         sql_query += '''
         GROUP BY
-            JournalCode, EcritureDate, CompteNum, EcritureLib, PieceRef, EcritureLet, 
+            JournalCode, EcritureDate, CompteNum, CompteLib, EcritureLib, PieceRef, EcritureLet, 
             CatResBilan, rcomp.name, Exercice, Tiers, TiersID, agId, 
 			aac.id, affat.codeana, aac.name, affat.affaire,
 			so.warehouse_id, swpo.id, affat.CodeAtelier, swso.name, swpo.name, affat.Atelier,
 			affat.idclientliv, rpliv.name, affat.devisclient,
 			--am.partner_shipping_id, am.partner_id, rpliv.name,
 			pp.id, pp.default_code, pt.id, pt.name, pt.type,
-			am.id, am.ref, am.state, am.type, am.invoice_origin, am.invoice_partner_display_name,
+			am.id, am.ref, am.state, am.type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
 			aml.id, aml.sequence, aml.name,
 			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
         UNION ALL
@@ -478,11 +503,12 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(replace(replace(replace(aj.code, '|', '-'), '\t', ''),'FACTU','AC'),'FAC','VE') AS JournalCode,
             am.date AS EcritureDate,
             aa.code AS CompteNum,
+            aa.name AS CompteLib,
             coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
             CASE WHEN sum(aml.balance) <= 0 THEN 0 ELSE SUM(aml.balance) END AS Debit,
             CASE WHEN sum(aml.balance) >= 0 THEN 0 ELSE -SUM(aml.balance) END AS Credit, 
             sum(aml.balance) AS Balance, 
-            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 10) AS PieceRef,
+            replace(replace(am.name, '|', '-'), '\t', '') AS PieceRef,
             CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet,
             case when ag.name is null then '' else ag.name end AS CatResBilan,
             rcomp.name as Societe,
@@ -496,7 +522,9 @@ class XenonSuiviFinancier(models.TransientModel):
 			affat.idclientliv as idclientliv, rpliv.name as clientliv, affat.devisclient as devisclient, --, affat.clientfact,
 			--am.partner_shipping_id as idclientliv, am.partner_id as idclientfact, rpliv.name as clientliv,
 			pp.id as id_article, pp.default_code, pt.id as id2_article, pt.name as article, pt.type as typearticle,
-			am.id as idmove, replace(replace(am.ref,';',''),',','') as ref, am.state, am.type, am.invoice_origin, am.invoice_partner_display_name,
+			am.id as idmove, replace(replace(am.ref,';',''),',','') as ref, am.state, 
+            te.typeF, 
+            am.invoice_origin, am.invoice_partner_display_name,
 			aml.id as idmoveline, aml.sequence, replace(replace(replace(aml.name,chr(10),''),';',''),',','') as name,
 			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
         FROM
@@ -522,6 +550,7 @@ class XenonSuiviFinancier(models.TransientModel):
 			left join product_product pp on pp.id=aml.product_id
 			left join product_template pt on pt.id =pp.product_tmpl_id
 			left join res_partner rpliv ON rpliv.id=so.partner_id--am.partner_shipping_id
+            left join TypeEcriture te on te.typeO=am.type
         WHERE
             am.date >= %s
             AND am.date <= %s
@@ -540,14 +569,14 @@ class XenonSuiviFinancier(models.TransientModel):
 
         sql_query += '''
         GROUP BY
-            JournalCode, EcritureDate, CompteNum, EcritureLib, PieceRef, EcritureLet, 
+            JournalCode, EcritureDate, CompteNum, CompteLib, EcritureLib, PieceRef, EcritureLet, 
             CatResBilan, rcomp.name, Exercice, Tiers, TiersID, agId,
             aac.id, affat.codeana, aac.name, affat.affaire,
 			so.warehouse_id, swpo.id, affat.CodeAtelier, swso.name, swpo.name, affat.Atelier,
 			affat.idclientliv, rpliv.name, affat.devisclient,
 			--am.partner_shipping_id, am.partner_id, rpliv.name,
 			pp.id, pp.default_code, pt.id, pt.name, pt.type,
-			am.id, am.ref, am.state, am.type, am.invoice_origin, am.invoice_partner_display_name,
+			am.id, am.ref, am.state, am.type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
 			aml.id, aml.sequence, aml.name,
 			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
         ORDER BY
@@ -913,6 +942,7 @@ class XenonSuiviFinancier(models.TransientModel):
 		'BUD' as JournalCode,
         MoisFin as EcritureDate,
         Compte as CompteNum, 
+        LibelleCompte as CompteLib,
         Budget as EcritureLib, 
         0 as Debit,
 		0 as Credit,
@@ -973,6 +1003,7 @@ class XenonSuiviFinancier(models.TransientModel):
 		coalesce(N1.name1, N2.name1, N3.name1, N4.Name1, N5.Name1) as SIG1,
 		coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) as SIG0,
         case coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) when 'Résultat' then 'SIG' else '' end as SIG,
+        0 AS MontantM,
         '' AS textefin
 	from Budget
     LEFT JOIN SIG N5 on N5.id5=agId
@@ -986,6 +1017,7 @@ class XenonSuiviFinancier(models.TransientModel):
         R1.JournalCode,
         to_char(R1.EcritureDate,'DD/MM/YYYY') as EcritureDate,
         R1.CompteNum, 
+        R1.CompteLib,
         R1.EcritureLib, 
         R1.Debit AS Debit,
         R1.Credit AS Credit,
@@ -1040,6 +1072,7 @@ class XenonSuiviFinancier(models.TransientModel):
 		coalesce(N1.name1, N2.name1, N3.name1, N4.Name1, N5.Name1) as SIG1,
 		coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) as SIG0,
         case coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) when 'Résultat' then 'SIG' else '' end as SIG,
+        (R1.Balance * (-1)) AS MontantM,
         '' AS textefin
         FROM Resultat1 R1
         INNER JOIN Balance Bal on Bal.Societe=R1.Societe AND Bal.CompteNum=R1.CompteNum AND Bal.Exercice=R1.Exercice
@@ -1052,7 +1085,7 @@ class XenonSuiviFinancier(models.TransientModel):
 			LEFT JOIN SIG N0 on N0.id0=agId)
         
         , ValeurAjoutee as (
-        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as EcritureLib, 
+        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as compteLib, '' as EcritureLib, 
             replace(to_char(sum(Debit), '000000000000000D99'), '.', ',') AS Debit,
             replace(to_char(sum(Credit), '000000000000000D99'), '.', ',') AS Credit,
             replace(to_char(sum(Balance), '000000000000000D99'), '.', ',') AS Balance,
@@ -1089,14 +1122,16 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(DebitBudget), '000000000000000D99'), '.', ',') AS DebitBudget,
             replace(to_char(sum(CreditBudget), '000000000000000D99'), '.', ',') AS CreditBudget,
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget, 
-            Etat, TypeLigne, 'SIG' as SIG, '' as textefin
+            Etat, TypeLigne, 'SIG' as SIG,
+            replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            '' as textefin
         from SuiviDetail 
         where SIG3 = 'Valeur ajoutée'
         group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG3
 )
 
         , ResultatExploitation as (
-        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as EcritureLib, 
+        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as compteLib, '' as EcritureLib, 
             replace(to_char(sum(Debit), '000000000000000D99'), '.', ',') AS Debit,
             replace(to_char(sum(Credit), '000000000000000D99'), '.', ',') AS Credit,
             replace(to_char(sum(Balance), '000000000000000D99'), '.', ',') AS Balance,
@@ -1133,13 +1168,15 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(DebitBudget), '000000000000000D99'), '.', ',') AS DebitBudget,
             replace(to_char(sum(CreditBudget), '000000000000000D99'), '.', ',') AS CreditBudget,
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget,
-            Etat, TypeLigne, 'SIG' as SIG, '' as textefin
+            Etat, TypeLigne, 'SIG' as SIG, 
+            replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            '' as textefin
         from SuiviDetail 
         where SIG2 = 'Résultat d''exploitation'
         group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG2
 )
         , ResultatCourant as (
-        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as EcritureLib, 
+        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as compteLib, '' as EcritureLib, 
             replace(to_char(sum(Debit), '000000000000000D99'), '.', ',') AS Debit,
             replace(to_char(sum(Credit), '000000000000000D99'), '.', ',') AS Credit,
             replace(to_char(sum(Balance), '000000000000000D99'), '.', ',') AS Balance, 
@@ -1176,14 +1213,16 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(DebitBudget), '000000000000000D99'), '.', ',') AS DebitBudget,
             replace(to_char(sum(CreditBudget), '000000000000000D99'), '.', ',') AS CreditBudget,
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget, 
-            Etat, TypeLigne, 'SIG' as SIG, '' as textefin
+            Etat, TypeLigne, 'SIG' as SIG, 
+            replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            '' as textefin
         from SuiviDetail 
         where SIG1 = 'Résultat courant'
         group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG1
 )
 
         , Resultat as (
-        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as EcritureLib, 
+        Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as compteLib, '' as EcritureLib, 
             replace(to_char(sum(Debit), '000000000000000D99'), '.', ',') AS Debit,
             replace(to_char(sum(Credit), '000000000000000D99'), '.', ',') AS Credit,
             replace(to_char(sum(Balance), '000000000000000D99'), '.', ',') AS Balance,
@@ -1220,16 +1259,80 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(DebitBudget), '000000000000000D99'), '.', ',') AS DebitBudget,
             replace(to_char(sum(CreditBudget), '000000000000000D99'), '.', ',') AS CreditBudget,
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget,
-            Etat, TypeLigne, 'SIG' as SIG, '' as textefin
+            Etat, TypeLigne, 'SIG' as SIG, 
+            replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            '' as textefin
         from SuiviDetail 
         where SIG0='Résultat'
         group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG0
 )
+
+        , Extracompta as (
+		Select
+            'ANNEXE' as JournalCode,
+            to_char(x_date,'DD/MM/YYYY') as EcritureDate,
+            '' as CompteNum, 
+            '' as compteLib,
+            '' as EcritureLib, 
+            '0' AS Debit,
+            '0' AS Credit,
+            replace(to_char(x_balance, '000000000000000D99'), '.', ',') AS Balance,
+            '' as PieceRef,
+            '' as EcritureLet,
+            x_code as CatResBilan,
+            S0.name as Societe,
+            EF.name as Exercice,
+            '' as Tiers,
+            0 as TiersID,
+            
+            0 as codeana,
+            '' as affaire,
+            0 as codeatelier,
+            '' as atelier,
+            0 as idclientliv,
+            '' as clientliv,
+            '' as devisclient,
+            0 as id_article,
+            '' as default_code,
+            0 as id2_article,
+            '' as article,
+            '' as typearticle,
+            0 as idmove,
+            '' as ref,
+            '' as state,
+            '' as type,
+            '' as invoice_origin,
+            '' as invoice_partner_display_name,
+            0 as idmoveline,
+            0 as sequence,
+            '' as name,
+            '0' AS quantity,
+            '0' AS price_unit,
+            '0' AS discount,
+            '0' AS price_subtotal,
+            '' as display_type,
+            
+            '' as SensBalance,
+            '' as SensSoldeTiers,
+            to_char(x_date,'YYYY-MM') as AnneeMois,
+            '0' AS DebitBudget,
+            '0' AS CreditBudget,
+            '0' AS MontantBudget,
+            'Comptabilisé' as Etat,
+            'Realise' as TypeLigne,
+            '' as SIG,
+            replace(to_char(x_balance, '000000000000000D99'), '.', ',') AS MontantM,
+            '' as textefin
+        from x_extracompta
+		inner join Company S0 on S0.id=x_company_id
+		INNER JOIN account_fiscal_year EF on EF.company_id=x_company_id and x_date between EF.date_from and EF.date_to)
+        
         
         Select
             JournalCode,
             EcritureDate,
             CompteNum, 
+            CompteLib,
             EcritureLib, 
             replace(to_char(Debit, '000000000000000D99'), '.', ',') AS Debit,
             replace(to_char(Credit, '000000000000000D99'), '.', ',') AS Credit,
@@ -1278,6 +1381,7 @@ class XenonSuiviFinancier(models.TransientModel):
             Etat,
             TypeLigne,
             SIG,
+            replace(to_char(MontantM, '000000000000000D99'), '.', ',') AS MontantM,
             textefin
         from SuiviDetail
         union all
@@ -1288,8 +1392,8 @@ class XenonSuiviFinancier(models.TransientModel):
         Select * from ResultatCourant
         union all
         Select * from Resultat
-
-
+        union all
+		Select * from Extracompta
         
         '''
         
