@@ -6,9 +6,9 @@ class Xenonextracompta(models.Model):
     _name='x_extracompta'
     _description="Données extracomptables"
     
-    x_code=fields.Char(string='code', required=True) #A supprimer
+    x_code=fields.Char(string='code', required=True)
     x_libelle=fields.Char(string='libelle', required=True)
-    x_valeur=fields.Char(string='valeur', required=True) #A supprimer
+    #x_valeur=fields.Char(string='valeur', required=True) #A supprimer
     x_balance=fields.Monetary(string='montant', default=0.0, currency_field='x_company_currency_id')
     x_commentaire=fields.Char(string='commentaire')
     x_company_id = fields.Many2one('res.company', 'Company', index=True, default=lambda self: self.env.company)
