@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+      
+    <record id="view_progdigital_list_xenon" model="ir.ui.view">
+                <field name="name">progdigital.liste.xenon</field>
+                <field name="model">x_progdigital</field>
+                <field name="arch" type="xml">
+                    <tree>
+                        <field name="x_nomclient"/>
+                        <field name="x_immat"/>
+						<field name="x_maintenance"/>
+                        <field name="x_lieu"/>
+                        <field name="x_hdevol"/>
+                        <field name="x_datecreation"/>
+                        <field name="x_datecloture"/>
+                        <field name="x_entretien"/>
+                        <field name="x_typeentretien"/>
+                        <field name="x_intervenant"/>
+                        <field name="x_trigramme"/>
+                        <field name="x_datesaisie"/>
+                        <field name="x_hsaisie"/>
+                    </tree>
+                </field>
+    </record>
+      
+          
+    <record model="ir.actions.act_window" id="progdigital_action">
+      <field name="name">XenonProgdigital</field>
+      <field name="res_model">x_progdigital</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+      
+    <!--<menuitem id="menu_xenon" name="Xenon" parent="account.menu_finance" sequence="90" groups="account.group_account_manager"/>-->
+      
+    <menuitem id="progdigital_menu"
+        name="ProgdigitalXenon"
+        parent="menu_xenonLLO"
+        action="progdigital_action"
+        sequence="30"/>
+      
+      
+    <!--Export-->
+      
+    <!--<record id="progdigital_export" model="ir.actions.act_window">
+        <field name="name">XenonProgdigitalExport</field>
+        <field name="res_model">x_progdigital</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    -->
+      
+    
+    
+    <record id="progdigital_export_view" model="ir.ui.view">
+        <field name="name">ProgdigitalExportEncours</field>
+        <field name="model">x_progdigital</field>
+        <field name="arch" type="xml">
+            <form string="Export Encours">
+                <!--<notebook>
+                    <page string="Options">
+                        <group>
+                            <field name="x_date_from"/>
+                            <field name="x_date_to"/>
+                        </group>
+                    </page>
+                </notebook>-->
+                <footer>
+                    <button string="GenerateEncours" name="generate_export_encours" type="object"
+                        class="oe_highlight"/>
+                    <button string="Cancel" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+      <!--
+      <menuitem id="progdigital_export"
+        name="ProgdigitalExport"
+        parent="menu_xenonLLO"
+        action="progdigital_export"
+        sequence="6"/>
+      -->
+      
+      
+  </data>
+</odoo>
+
+

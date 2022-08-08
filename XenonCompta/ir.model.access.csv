@@ -7,3 +7,7 @@ access_suivifinancier,access_suivifinancier,model_x_suivifinancier,base.group_us
 access_suivifinancier_manager,access_suivifinancier.manager,model_x_suivifinancier,sales_team.group_sale_manager,1,1,1,1
 access_parametrage,access_parametrage,model_x_parametrage,base.group_user,1,0,0,0
 access_parametrage_manager,access_parametrage.manager,model_x_parametrage,sales_team.group_sale_manager,1,1,1,1
+access_extracompta,access_extracompta,model_x_extracompta,base.group_user,1,0,0,0
+access_extracompta_manager,access_extracompta.manager,model_x_extracompta,sales_team.group_sale_manager,1,1,1,1
+access_progdigital,access_progdigital,model_x_progdigital,base.group_user,1,0,0,0
+access_progdigital_manager,access_progdigital.manager,model_x_progdigital,sales_team.group_sale_manager,1,1,1,1
