@@ -87,7 +87,7 @@
       
     <menuitem id="budget_menu"
         name="BudgetXenon"
-        parent="menu_xenonLLO"
+        parent="__export__.ir_ui_menu_456_dbdec0a3"
         action="budget_action"
         sequence="20"/>
       

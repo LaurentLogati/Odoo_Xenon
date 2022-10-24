@@ -30,7 +30,7 @@
       
     <menuitem id="extracompta_menu"
         name="ExtracomptaXenon"
-        parent="menu_xenonLLO"
+        parent="__export__.ir_ui_menu_456_dbdec0a3"
         action="extracompta_action"
         sequence="4"/>
       

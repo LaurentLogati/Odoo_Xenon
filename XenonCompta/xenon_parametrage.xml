@@ -29,7 +29,7 @@
       
     <menuitem id="parametrage_menu"
         name="ParametrageXenon"
-        parent="menu_xenonLLO"
+        parent="__export__.ir_ui_menu_456_dbdec0a3"
         action="parametrage_action"
         sequence="1"/>
       

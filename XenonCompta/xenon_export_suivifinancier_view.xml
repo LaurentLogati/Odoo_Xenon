@@ -38,7 +38,7 @@
 
 <!--<menuitem id="menu_finance_LLO" name="AnalyseXenonLLO" parent="account_accountant.menu_finance" sequence="80" groups="account.group_account_user"/>-->
 <!--<menuitem id="menu_xenonLLO" name="XenonLLO" parent="menu_finance_LLO" sequence="90" groups="account.group_account_manager"/> -->
-    <menuitem id="menu_xenonLLO" name="XenonLLO" parent="studio_customization.comptabilite_xenon_1e1bdcad-f9c5-4fd5-a953-2aa538ff8a39" sequence="90" groups="account.group_account_manager"/>
+    <!--<menuitem id="menu_xenonLLO" name="XenonLLO" parent="studio_customization.comptabilite_xenon_1e1bdcad-f9c5-4fd5-a953-2aa538ff8a39" sequence="90" groups="account.group_account_manager"/>-->
     <!--parent : configuration/technique/menu + afficher les métadonnées-->
     <!--parent="account.account_account_menu" - Menu configuration-->
     <!--parent="account.menu_finance_reports" - Menu analyse-->
@@ -47,7 +47,7 @@
         <!--parent="account.menu_finance_configuration"-->
 <menuitem id="Suivifinancier_menu"
         name="Suivifinancier"
-        parent="menu_xenonLLO"
+        parent="__export__.ir_ui_menu_456_dbdec0a3"
         action="account_fr_suivifinancier_action"
         sequence="1"/>
 
