@@ -217,7 +217,10 @@ class XenonSuiviFinancier(models.TransientModel):
             u'TypeLigne',      # 48
             u'SIG',            # 49
             u'MontantM',       # 50
-            u'textefin',       # 51
+            u'NomBudget',      # 51
+            u'CompteClasse',   # 52
+            u'CompteType',     # 53
+            u'textefin',       # 54
             ]
 
         rows_to_write = [header]
@@ -277,7 +280,10 @@ class XenonSuiviFinancier(models.TransientModel):
             0 as price_unit,
             0 as discount,
             0 as price_subtotal,
-            '' as display_type
+            '' as display_type,
+            'Realise' as NomBudget, 
+            substring(MIN(aa.code),1,1) as CompteClasse,
+            MIN(aat.name) as CompteType
 
         FROM
             account_move_line aml
@@ -357,7 +363,10 @@ class XenonSuiviFinancier(models.TransientModel):
             0 as price_unit,
             0 as discount,
             0 as price_subtotal,
-            '' as display_type
+            '' as display_type,
+            'Realise' as NomBudget, 
+            substring(MIN(aa.code),1,1) as CompteClasse,
+            MIN(aat.name) as CompteType
             
         FROM
             account_move_line aml
@@ -446,7 +455,10 @@ class XenonSuiviFinancier(models.TransientModel):
             te.typeF, 
             am.invoice_origin, am.invoice_partner_display_name,
 			aml.id as idmoveline, aml.sequence, replace(replace(replace(aml.name,chr(10),''),';',''),',','') as name,
-			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
+			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type,
+            'Realise' as NomBudget, 
+            substring(aa.code,1,1) as CompteClasse,
+            aat.name as CompteType
         FROM
             account_move_line aml
             LEFT JOIN account_move am ON am.id=aml.move_id
@@ -497,7 +509,8 @@ class XenonSuiviFinancier(models.TransientModel):
 			pp.id, pp.default_code, pt.id, pt.name, pt.type,
 			am.id, am.ref, am.state, am.type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
 			aml.id, aml.sequence, aml.name,
-			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
+			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type,
+            aat.name
         UNION ALL
         SELECT
             replace(replace(replace(replace(aj.code, '|', '-'), '\t', ''),'FACTU','AC'),'FAC','VE') AS JournalCode,
@@ -526,7 +539,10 @@ class XenonSuiviFinancier(models.TransientModel):
             te.typeF, 
             am.invoice_origin, am.invoice_partner_display_name,
 			aml.id as idmoveline, aml.sequence, replace(replace(replace(aml.name,chr(10),''),';',''),',','') as name,
-			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
+			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type,
+            'Realise' as NomBudget, 
+            substring(aa.code,1,1) as CompteClasse,
+            aat.name as CompteType
         FROM
             account_move_line aml
             LEFT JOIN account_move am ON am.id=aml.move_id
@@ -578,7 +594,8 @@ class XenonSuiviFinancier(models.TransientModel):
 			pp.id, pp.default_code, pt.id, pt.name, pt.type,
 			am.id, am.ref, am.state, am.type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
 			aml.id, aml.sequence, aml.name,
-			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type
+			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type,
+            aat.name
         ORDER BY
             EcritureDate,
 			JournalCode,
@@ -878,7 +895,10 @@ class XenonSuiviFinancier(models.TransientModel):
 	,Budget as (select B0.Budget as Budget, B0.DateDebut as DateDebut, B0.DateFin as DateFin,
 		 C0.code as Compte, C0.name as LibelleCompte, case when C1.name is null then '' else C1.name end AS CatResBilan,
 		 B0.MoisDebut as MoisDebut, B0.MoisFin as MoisFin, 
-		 B0.Montant as Montant
+         case substring(C0.code,1,1) when '7' then B0.Montant 
+                                     when '6' then B0.Montant * (-1) 
+                                     else B0.Montant 
+                                     end as Montant         
 		, B0.AnneeMois as AnneeMois
 		, S0.name as Societe
 		, B0.Exercice as Exercice
@@ -914,12 +934,16 @@ class XenonSuiviFinancier(models.TransientModel):
             0 as price_unit,
             0 as discount,
             0 as price_subtotal,
-            '' as display_type
+            '' as display_type,
+            B0.Budget as NomBudget, 
+            substring(C0.code,1,1) as CompteClasse,
+            aat.name as CompteType
         
 		  from BudgetEnLigne B0
 		 inner join account_account C0 on C0.id=B0.x_compte
 		 inner join account_group C1 on C1.id=C0.group_id
 		 inner join Company S0 on S0.id=x_company_id
+         LEFT JOIN account_account_type aat ON C0.user_type_id = aat.id                                                              
 		 where B0.Statut!='cancel'
 
 		 order by B0.Budget, B0.AnneeMois, C0.code, C0.name, C1.name
@@ -1004,6 +1028,9 @@ class XenonSuiviFinancier(models.TransientModel):
 		coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) as SIG0,
         case coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) when 'Résultat' then 'SIG' else '' end as SIG,
         0 AS MontantM,
+        NomBudget,
+        CompteClasse,
+        CompteType,          
         '' AS textefin
 	from Budget
     LEFT JOIN SIG N5 on N5.id5=agId
@@ -1073,6 +1100,9 @@ class XenonSuiviFinancier(models.TransientModel):
 		coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) as SIG0,
         case coalesce(N0.name0, N1.name0, N2.name0, N3.name0, N4.Name0, N5.Name0) when 'Résultat' then 'SIG' else '' end as SIG,
         (R1.Balance * (-1)) AS MontantM,
+        NomBudget,
+        CompteClasse,
+        CompteType,          
         '' AS textefin
         FROM Resultat1 R1
         INNER JOIN Balance Bal on Bal.Societe=R1.Societe AND Bal.CompteNum=R1.CompteNum AND Bal.Exercice=R1.Exercice
@@ -1124,10 +1154,13 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget, 
             Etat, TypeLigne, 'SIG' as SIG,
             replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            NomBudget,
+            '' as CompteClasse,
+            '' as CompteType,          
             '' as textefin
         from SuiviDetail 
         where SIG3 = 'Valeur ajoutée'
-        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG3
+        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG3, NomBudget
 )
 
         , ResultatExploitation as (
@@ -1170,10 +1203,13 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget,
             Etat, TypeLigne, 'SIG' as SIG, 
             replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            NomBudget,
+            '' as CompteClasse,
+            '' as CompteType,          
             '' as textefin
         from SuiviDetail 
         where SIG2 = 'Résultat d''exploitation'
-        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG2
+        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG2, NomBudget
 )
         , ResultatCourant as (
         Select 'SIG' as JournalCode, '' as EcritureDate, '' as compte, '' as compteLib, '' as EcritureLib, 
@@ -1215,10 +1251,13 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget, 
             Etat, TypeLigne, 'SIG' as SIG, 
             replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            NomBudget,
+            '' as CompteClasse,
+            '' as CompteType,          
             '' as textefin
         from SuiviDetail 
         where SIG1 = 'Résultat courant'
-        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG1
+        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG1, NomBudget
 )
 
         , Resultat as (
@@ -1261,10 +1300,13 @@ class XenonSuiviFinancier(models.TransientModel):
             replace(to_char(sum(MontantBudget), '000000000000000D99'), '.', ',') AS MontantBudget,
             Etat, TypeLigne, 'SIG' as SIG, 
             replace(to_char((sum(Balance) * (-1)), '000000000000000D99'), '.', ',') AS MontantM,
+            NomBudget,
+            '' as CompteClasse,
+            '' as CompteType,          
             '' as textefin
         from SuiviDetail 
         where SIG0='Résultat'
-        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG0
+        group by TypeLigne, AnneeMois, Societe, Exercice, Etat, SIG0, NomBudget
 )
 
         , Extracompta as (
@@ -1322,6 +1364,9 @@ class XenonSuiviFinancier(models.TransientModel):
             'Realise' as TypeLigne,
             '' as SIG,
             replace(to_char(x_balance, '000000000000000D99'), '.', ',') AS MontantM,
+            '' as NomBudget,
+            '' as CompteClasse,
+            '' as CompteType,                
             '' as textefin
         from x_extracompta
 		inner join Company S0 on S0.id=x_company_id
@@ -1382,6 +1427,9 @@ class XenonSuiviFinancier(models.TransientModel):
             TypeLigne,
             SIG,
             replace(to_char(MontantM, '000000000000000D99'), '.', ',') AS MontantM,
+            NomBudget,
+            CompteClasse,
+            CompteType,          
             textefin
         from SuiviDetail
         union all
