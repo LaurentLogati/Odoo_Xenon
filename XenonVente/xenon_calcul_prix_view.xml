@@ -10,6 +10,11 @@
                         <field name="x_libelle"/>
                         <field name="x_datedebut"/>
                         <field name="x_datefin"/>
+						<field name="x_fournisseur"/>
+                        <field name="x_categ_id"/>
+                        <field name="x_typeart"/>
+                        <field name="x_company_id"/>
+                        <field name="x_defaut"/>
                     </tree>
                 </field>
     </record>
@@ -23,6 +28,11 @@
                         <field name="x_libelle"/>
                         <field name="x_datedebut"/>
                         <field name="x_datefin"/>
+						<field name="x_fournisseur"/>
+                        <field name="x_categ_id"/>
+                        <field name="x_typeart"/>
+                        <field name="x_company_id"/>
+                        <field name="x_defaut"/>
                         </group>
                         <notebook>
                             <page string="Detail">
