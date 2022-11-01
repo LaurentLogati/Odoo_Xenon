@@ -66,6 +66,8 @@ class XenonPurchaseOrder(models.Model):
                 if line.product_id.display_name != False:
                     # Do not add a contact as a supplier
                     partner = self.partner_id if not self.partner_id.parent_id else self.partner_id.parent_id
+                    catart = line.product_id.product_tmpl_id.categ_id
+                    typeart = line.product_id.product_tmpl_id.type                                                                    
                     if line.product_id and partner in line.product_id.seller_ids.mapped('name'):
                         # Convert the price in the right currency.
                         currency = partner.property_purchase_currency_id or self.env.company.currency_id
@@ -84,7 +86,7 @@ class XenonPurchaseOrder(models.Model):
 
             # 2- Mise à jour du prix de l'article dans le devis client 
             # le process a été modifié pour avoir une seule demande de prix frs pour un devis client cf Xenon_purchase_stock_rule
-            # TODO recherche de la liste pourcentage en fonction des dates
+            #recherche de la liste pourcentage en fonction des dates, de la société, frs, catégorie et type d'article MEP_09.1
             # TODO mise à jour du prix de vente dans la fiche article
 
                     rec_liste=self.env['sale.order'].search([('name','=', self.origin)])
@@ -95,7 +97,7 @@ class XenonPurchaseOrder(models.Model):
                             if ligne.x_px_maj==False and not ligne.display_type:
                                 pxtousok=pxtousok+1
                                 if ligne.product_id==line.product_id and partner in line.product_id.seller_ids.mapped('name'):
-                                    pourcentage=self.env['x_calculprix.detail'].search([('x_max','>=',price),('x_min','<=',price)]).x_marge
+                                    pourcentage=self._calcul_marge(partner, catart, typeart, price)
                                     ligne.update({'price_unit':price * (1 + (pourcentage/100)), 'x_px_maj':True})
                                     pxtousok=pxtousok-1
                                     # Mise à jour du prix de vente dans la fiche article
@@ -137,7 +139,7 @@ class XenonPurchaseOrder(models.Model):
                         self.env['product.supplierinfo'].search([('name','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
                     # Mise à jour du prix de vente dans la fiche article
                     # + Mise à jour coût avec le dernier px d'achat /!\ attention ne met à jour que pour la société en cours pour le coût !!!!!!! ### MEP_07.1
-                    pourcentage=self.env['x_calculprix.detail'].search([('x_max','>=',price),('x_min','<=',price)]).x_marge
+                    pourcentage=self._calcul_marge(partner, catart, typeart, price)
                     self.env['product.template'].search([('id','=',line.product_id.product_tmpl_id.id)]).update({'list_price': price * (1 + (pourcentage/100)),'standard_price': price})
         return True
     
@@ -186,7 +188,51 @@ class XenonPurchaseOrder(models.Model):
             }
 
             
-      
+    def _calcul_marge(self,frs, catart, typeart, price):
+        _logger.info('logLLO_frs ' + str(frs.id))
+        _logger.info('logLLO_cat ' + str(catart.id))
+        _logger.info('logLLO_type ' + str(typeart))
+        _logger.info('logLLO_datenow ' + str(datetime.now()))
+        _logger.info('logLLO_companyid ' + str(self.company_id.id))
+        
+        #rec_marge=self.env['x_calculprix'].search([('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now())])
+        
+        # 1 - recherche d'un tableau de marge pour le fournisseur pour la société
+        rec_marge=self.env['x_calculprix'].search([('x_company_id','=',self.company_id.id),('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now()), ('x_fournisseur','=', frs.id)])
+        _logger.info('logLLO_rec_marge1 ' + str(rec_marge))
+        if not rec_marge:
+            # 2 - recherche d'un tableau de marge pour le fournisseur
+            rec_marge=self.env['x_calculprix'].search([('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now()), ('x_fournisseur','=', frs.id)])
+            _logger.info('logLLO_rec_marge2 ' + str(rec_marge))
+            if not rec_marge:
+                # 3 - recherche d'un tableau de marge pour la catégorie d'article pour la société
+                rec_marge=self.env['x_calculprix'].search([('x_company_id','=',self.company_id.id),('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now()), ('x_categ_id','=', catart.id)])
+                _logger.info('logLLO_rec_marge3 ' + str(rec_marge))
+                if not rec_marge:
+                    # 4 - recherche d'un tableau de marge pour la catégorie d'article
+                    rec_marge=self.env['x_calculprix'].search([('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now()), ('x_categ_id','=', catart.id)])
+                    _logger.info('logLLO_rec_marge4 ' + str(rec_marge))
+                    if not rec_marge:
+                        # 5 - recherche d'un tableau de marge pour le type d'article pour la société
+                        rec_marge=self.env['x_calculprix'].search([('x_company_id','=',self.company_id.id),('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now()), ('x_typeart','=', typeart)])
+                        _logger.info('logLLO_rec_marge5 ' + str(rec_marge))
+                        if not rec_marge:
+                            # 6 - recherche d'un tableau de marge pour le type d'article
+                            rec_marge=self.env['x_calculprix'].search([('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now()), ('x_typeart','=', typeart)])
+                            _logger.info('logLLO_rec_marge6 ' + str(rec_marge))
+                            if not rec_marge:
+                                rec_marge=self.env['x_calculprix'].search([('x_datefin','>=', datetime.now()), ('x_datedebut','<=', datetime.now()), ('x_defaut','=','t')])
+                                _logger.info('logLLO_rec_marge7 ' + str(rec_marge))
+                                if not rec_marge:
+                                    rec_marge=''
+        _logger.info('logLLO_margefin ' + str(rec_marge))
+        if rec_marge=='':
+            pourcentage=0
+        else:
+            _logger.info('logLLO_margeid ' + str(rec_marge.id))
+            pourcentage=self.env['x_calculprix.detail'].search([('x_liste_ids','=',rec_marge.id),('x_max','>=',price),('x_min','<=',price)]).x_marge
+        _logger.info('logLLO_pourc ' + str(pourcentage))
+        return pourcentage  
 
             
 class XenonPurchaseOrderLine(models.Model):
