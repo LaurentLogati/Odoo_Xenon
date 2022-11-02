@@ -129,6 +129,8 @@ class XenonPurchaseOrder(models.Model):
                 for line in self.order_line:
                 # Do not add a contact as a supplier
                     partner = self.partner_id if not self.partner_id.parent_id else self.partner_id.parent_id
+                    catart = line.product_id.product_tmpl_id.categ_id
+                    typeart = line.product_id.product_tmpl_id.type
                     if line.product_id and partner in line.product_id.seller_ids.mapped('name'):              
                         # Convert the price in the right currency.
                         currency = partner.property_purchase_currency_id or self.env.company.currency_id
