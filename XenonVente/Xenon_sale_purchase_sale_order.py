@@ -6,6 +6,8 @@ from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from odoo.tools import float_compare
+#MV15
+from odoo.tools.misc import get_lang
 
 import logging
 
@@ -15,17 +17,15 @@ _logger = logging.getLogger(__name__)
 class XenonSaleOrder(models.Model):
     _inherit = 'sale.order'
     
-    purchase_order_count = fields.Integer("Number of Purchase Order", compute='_compute_purchase_order_count', groups='purchase.group_purchase_user')
+    purchase_order_count = fields.Integer(
+        "Number of Purchase Order Generated",
+        compute='_compute_purchase_order_count',
+        groups='purchase.group_purchase_user')
 
-    @api.depends('order_line.purchase_line_ids')
+    @api.depends('order_line.purchase_line_ids.order_id')
     def _compute_purchase_order_count(self):
-        purchase_line_data = self.env['purchase.order.line'].read_group(
-            [('sale_order_id', 'in', self.ids)],
-            ['sale_order_id', 'purchase_order_count:count_distinct(order_id)'], ['sale_order_id']
-        )
-        purchase_count_map = {item['sale_order_id'][0]: item['purchase_order_count'] for item in purchase_line_data}
         for order in self:
-            order.purchase_order_count = purchase_count_map.get(order.id, 0)
+            order.purchase_order_count = len(order._get_purchase_orders())
 
     def _action_confirm(self):
         result = super(XenonSaleOrder, self)._action_confirm()
@@ -33,18 +33,36 @@ class XenonSaleOrder(models.Model):
             order.order_line.sudo()._purchase_service_generation()
         return result
 
-    def action_cancel(self):
-        result = super(XenonSaleOrder, self).action_cancel()
+    def _action_cancel(self):
+        result = super()._action_cancel()
         # When a sale person cancel a SO, he might not have the rights to write
         # on PO. But we need the system to create an activity on the PO (so 'write'
         # access), hence the `sudo`.
         self.sudo()._activity_cancel_on_purchase()
         return result
 
-    def action_view_purchase(self):
-        action = self.env.ref('purchase.purchase_rfq').read()[0]
-        action['domain'] = [('id', 'in', self.mapped('order_line.purchase_line_ids.order_id').ids)]
+    def action_view_purchase_orders(self):
+        self.ensure_one()
+        purchase_order_ids = self._get_purchase_orders().ids
+        action = {
+            'res_model': 'purchase.order',
+            'type': 'ir.actions.act_window',
+        }
+        if len(purchase_order_ids) == 1:
+            action.update({
+                'view_mode': 'form',
+                'res_id': purchase_order_ids[0],
+            })
+        else:
+            action.update({
+                'name': _("Purchase Order generated from %s", self.name),
+                'domain': [('id', 'in', purchase_order_ids)],
+                'view_mode': 'tree,form',
+            })
         return action
+
+    def _get_purchase_orders(self):
+        return self.order_line.purchase_line_ids.order_id
 
     def _activity_cancel_on_purchase(self):
         """ If some SO are cancelled, we need to put an activity on their generated purchase. If sale lines of
@@ -58,7 +76,7 @@ class XenonSaleOrder(models.Model):
             purchase_to_notify_map[purchase_line.order_id] |= purchase_line.sale_line_id
 
         for purchase_order, sale_order_lines in purchase_to_notify_map.items():
-            purchase_order.activity_schedule_with_view('mail.mail_activity_data_warning',
+            purchase_order._activity_schedule_with_view('mail.mail_activity_data_warning',
                 user_id=purchase_order.user_id.id or self.env.uid,
                 views_or_xmlid='sale_purchase.exception_purchase_on_sale_cancellation',
                 render_context={
@@ -69,7 +87,9 @@ class XenonSaleOrder(models.Model):
     
     def _action_dempx(self):
         result = super(XenonSaleOrder, self)._action_dempx()
+        _logger.info('logLLO_action_dempx_4')
         for order in self:
+            _logger.info('logLLO_action_dempx_5')
             order.order_line.sudo()._purchase_service_generation()
             #order.update({'x_mto_done':True})
         return result
@@ -159,7 +179,7 @@ class XenonSaleOrderLine(models.Model):
                 'sale_orders': sale_lines.mapped('order_id'),
                 'origin_values': origin_values,
             }
-            purchase_order.activity_schedule_with_view('mail.mail_activity_data_warning',
+            purchase_order._activity_schedule_with_view('mail.mail_activity_data_warning',
                 user_id=purchase_order.user_id.id or self.env.uid,
                 views_or_xmlid='sale_purchase.exception_purchase_on_sale_quantity_decreased',
                 render_context=render_context)
@@ -191,7 +211,7 @@ class XenonSaleOrderLine(models.Model):
         """
         self.ensure_one()
         partner_supplier = supplierinfo.name
-        fiscal_position_id = self.env['account.fiscal.position'].sudo().get_fiscal_position(partner_supplier.id)
+        fpos = self.env['account.fiscal.position'].sudo().get_fiscal_position(partner_supplier.id)
         date_order = self._purchase_get_date_order(supplierinfo)
         #recherche du type d'opération réception correspondant à l'entrepôt de la vente
         type_operation_id = self.env['stock.picking.type'].search([('company_id','=',self.company_id.id),('active','=','t'),('warehouse_id','=',self.order_id.warehouse_id.id),('sequence_code','=','IN')]).id
@@ -204,7 +224,7 @@ class XenonSaleOrderLine(models.Model):
             'origin': self.order_id.name,
             'payment_term_id': partner_supplier.property_supplier_payment_term_id.id,
             'date_order': date_order,
-            'fiscal_position_id': fiscal_position_id,
+            'fiscal_position_id': fpos.id,
             'picking_type_id': type_operation_id,
         }
 
@@ -230,30 +250,42 @@ class XenonSaleOrderLine(models.Model):
             date=purchase_order.date_order and purchase_order.date_order.date(), # and purchase_order.date_order[:10],
             uom_id=self.product_id.uom_po_id
         )
-        fpos = purchase_order.fiscal_position_id
-        taxes = fpos.map_tax(self.product_id.supplier_taxes_id) if fpos else self.product_id.supplier_taxes_id
-        if taxes:
-            taxes = taxes.filtered(lambda t: t.company_id.id == self.company_id.id)
-
+        #MV15 fpos = purchase_order.fiscal_position_id
+        #MV15 taxes = fpos.map_tax(self.product_id.supplier_taxes_id) if fpos else self.product_id.supplier_taxes_id
+        #MV15 if taxes:
+        #MV15     taxes = taxes.filtered(lambda t: t.company_id.id == self.company_id.id)
+        supplier_taxes = self.product_id.supplier_taxes_id.filtered(lambda t: t.company_id.id == self.company_id.id)
+        taxes = purchase_order.fiscal_position_id.map_tax(supplier_taxes)
+        
         # compute unit price
         price_unit = 0.0
+        product_ctx = {
+            'lang': get_lang(self.env, purchase_order.partner_id.lang).code,
+            'company_id': purchase_order.company_id,
+        }
+        
         if supplierinfo:
-            price_unit = self.env['account.tax'].sudo()._fix_tax_included_price_company(supplierinfo.price, self.product_id.supplier_taxes_id, taxes, self.company_id)
+            price_unit = self.env['account.tax'].sudo()._fix_tax_included_price_company(
+                supplierinfo.price, supplier_taxes, taxes, self.company_id)
             if purchase_order.currency_id and supplierinfo.currency_id != purchase_order.currency_id:
-                price_unit = supplierinfo.currency_id.compute(price_unit, purchase_order.currency_id)
+                price_unit = supplierinfo.currency_id._convert(price_unit, purchase_order.currency_id, purchase_order.company_id, fields.datetime.today())
+            product_ctx.update({'seller_id': supplierinfo.id})
+        else:
+            product_ctx.update({'partner_id': purchase_order.partner_id.id})
 
         # purchase line description in supplier lang
-        product_in_supplier_lang = self.product_id.with_context(
-            lang=supplierinfo.name.lang,
-            partner_id=supplierinfo.name.id,
-        )
-        name = '[%s] %s' % (self.product_id.default_code, product_in_supplier_lang.display_name)
-        if product_in_supplier_lang.description_purchase:
-            name += '\n' + product_in_supplier_lang.description_purchase
+        #MV15 product_in_supplier_lang = self.product_id.with_context(
+        #MV15     lang=supplierinfo.name.lang,
+        #MV15     partner_id=supplierinfo.name.id,
+        #MV15 )
+        #MV15 name = '[%s] %s' % (self.product_id.default_code, product_in_supplier_lang.display_name)
+        #MV15 if product_in_supplier_lang.description_purchase:
+        #MV15     name += '\n' + product_in_supplier_lang.description_purchase
             
 
         return {
-            'name': '[%s] %s' % (self.product_id.default_code, self.name) if self.product_id.default_code else self.name,
+            #MV15 'name': '[%s] %s' % (self.product_id.default_code, self.name) if self.product_id.default_code else self.name,
+            'name': self.product_id.with_context(**product_ctx).display_name,
             'product_qty': purchase_qty_uom,
             'product_id': self.product_id.id,
             'product_uom': self.product_id.uom_po_id.id,
@@ -275,10 +307,10 @@ class XenonSaleOrderLine(models.Model):
         supplier_po_map = {}
         sale_line_purchase_map = {}
         for line in self:
-            line = line.with_context(force_company=line.company_id.id)
+            line = line.with_company(line.company_id)
             # determine vendor of the order (take the first matching company and product)
-            suppliers = line.product_id.with_context(force_company=line.company_id.id)._select_seller(
-                quantity=line.product_uom_qty, uom_id=line.product_uom)
+            suppliers = line.product_id._select_seller(quantity=line.product_uom_qty, uom_id=line.product_uom)
+            
             if not suppliers:
                 raise UserError(_("There is no vendor associated to the product %s. Please define a vendor for this product.") % (line.product_id.display_name,))
             supplierinfo = suppliers[0]
@@ -296,7 +328,7 @@ class XenonSaleOrderLine(models.Model):
                 ], limit=1)
             if not purchase_order:
                 values = line._purchase_service_prepare_order_values(supplierinfo)
-                purchase_order = PurchaseOrder.create(values)
+                purchase_order = PurchaseOrder.with_context(mail_create_nosubscribe=True).create(values)
                 # Mise à jour de la commande en statut attentePrix (sinon la commande a déjà été mise à jour en statut à envoyer // ordre du code) 
                 self.env['sale.order'].search([('name','=',cde_origine)]).update({'state': 'wait'})
             else:  # update origin of existing PO

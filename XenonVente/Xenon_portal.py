@@ -1,16 +1,31 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-import binascii
-from datetime import date
+#import binascii
+#from datetime import date
 
-from odoo import fields, http, _
-from odoo.exceptions import AccessError, MissingError
+#from odoo import fields, http, _
+#from odoo.exceptions import AccessError, MissingError
+#from odoo.http import request
+##from odoo.addons.payment.controllers.portal import PaymentProcessing ### Upgrade V15
+#from odoo.addons.portal.controllers.mail import _message_post_helper
+#from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager, get_records_pager
+#from odoo.osv import expression
+
+#from odoo.addons.sale.controllers.portal import CustomerPortal
+
+import binascii
+
+from odoo import fields, http, SUPERUSER_ID, _
+from odoo.exceptions import AccessError, MissingError, ValidationError
+from odoo.fields import Command
 from odoo.http import request
-from odoo.addons.payment.controllers.portal import PaymentProcessing
+
+from odoo.addons.payment.controllers import portal as payment_portal
+from odoo.addons.payment import utils as payment_utils
 from odoo.addons.portal.controllers.mail import _message_post_helper
-from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager, get_records_pager
-from odoo.osv import expression
+from odoo.addons.portal.controllers import portal
+from odoo.addons.portal.controllers.portal import pager as portal_pager, get_records_pager
 
 from odoo.addons.sale.controllers.portal import CustomerPortal
 
@@ -50,7 +65,8 @@ class XenonCustomerPortal(CustomerPortal):
             order_sudo._send_order_confirmation_mail()
             order_sudo.action_majstatut()
 
-        pdf = request.env.ref('sale.action_report_saleorder').sudo().render_qweb_pdf([order_sudo.id])[0]
+        #MV15 pdf = request.env.ref('sale.action_report_saleorder').sudo().render_qweb_pdf([order_sudo.id])[0]
+        pdf = request.env.ref('sale.action_report_saleorder').with_user(SUPERUSER_ID)._render_qweb_pdf([order_sudo.id])[0]
 
         _message_post_helper(
             'sale.order', order_sudo.id, _('Order signed by %s') % (name,),

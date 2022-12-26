@@ -2,11 +2,17 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from collections import defaultdict
+#MV15 
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from itertools import groupby
+#MV15 
+from odoo.tools import float_compare
 
 from odoo import api, fields, models, _, SUPERUSER_ID
-from odoo.exceptions import UserError
+#MV15 from odoo.exceptions import UserError
+#MV15
+from odoo.addons.stock.models.stock_rule import ProcurementException
 
 import logging
 
@@ -16,22 +22,35 @@ _logger = logging.getLogger(__name__)
 class XenonStockRule(models.Model):
     _inherit = 'stock.rule'
 
-    action = fields.Selection(selection_add=[('buy', 'Buy')])
+    #MV15 action = fields.Selection(selection_add=[('buy', 'Buy')])
+    action = fields.Selection(selection_add=[
+        ('buy', 'Buy')
+    ], ondelete={'buy': 'cascade'})
 
     @api.model
     def _run_buy(self, procurements):
         procurements_by_po_domain = defaultdict(list)
+        errors = []
         for procurement, rule in procurements:
 
             # Get the schedule date in order to find a valid seller
             procurement_date_planned = fields.Datetime.from_string(procurement.values['date_planned'])
-            schedule_date = (procurement_date_planned - relativedelta(days=procurement.company_id.po_lead))
+            #MV15 schedule_date = (procurement_date_planned - relativedelta(days=procurement.company_id.po_lead))
 
-            supplier = procurement.product_id.with_context(force_company=procurement.company_id.id)._select_seller(
-                partner_id=procurement.values.get("supplier_id"),
-                quantity=procurement.product_qty,
-                date=schedule_date.date(),
-                uom_id=procurement.product_uom)
+            #MV15 supplier = procurement.product_id.with_context(force_company=procurement.company_id.id)._select_seller(
+            #MV15     partner_id=procurement.values.get("supplier_id"),
+            #MV15     quantity=procurement.product_qty,
+            #MV15     date=schedule_date.date(),
+            #MV15     uom_id=procurement.product_uom)
+            supplier = False
+            if procurement.values.get('supplierinfo_id'):
+                supplier = procurement.values['supplierinfo_id']
+            else:
+                supplier = procurement.product_id.with_company(procurement.company_id.id)._select_seller(
+                    partner_id=procurement.values.get("supplierinfo_name"),
+                    quantity=procurement.product_qty,
+                    date=procurement_date_planned.date(),
+                    uom_id=procurement.product_uom)
             
 
             # Fall back on a supplier for which no price may be defined. Not ideal, but better than
@@ -42,17 +61,22 @@ class XenonStockRule(models.Model):
 
             if not supplier:
                 msg = _('There is no matching vendor price to generate the purchase order for product %s (no vendor defined, minimum quantity not reached, dates not valid, ...). Go on the product form and complete the list of vendors.') % (procurement.product_id.display_name)
-                raise UserError(msg)
+                #MV15 raise UserError(msg)
+                errors.append((procurement, msg))
 
             partner = supplier.name
             # we put `supplier_info` in values for extensibility purposes
             procurement.values['supplier'] = supplier
-            procurement.values['propagate_date'] = rule.propagate_date
-            procurement.values['propagate_date_minimum_delta'] = rule.propagate_date_minimum_delta
+            #MV15 procurement.values['propagate_date'] = rule.propagate_date
+            #MV15 procurement.values['propagate_date_minimum_delta'] = rule.propagate_date_minimum_delta
             procurement.values['propagate_cancel'] = rule.propagate_cancel
 
             domain = rule._make_po_get_domain(procurement.company_id, procurement.values, partner)
             procurements_by_po_domain[domain].append((procurement, rule))
+        
+        #MV15 
+        if errors:
+            raise ProcurementException(errors)
 
         for domain, procurements_rules in procurements_by_po_domain.items():
             # Get the procurements for the current domain.
@@ -67,15 +91,20 @@ class XenonStockRule(models.Model):
             po = self.env['purchase.order'].sudo().search([('origin','=',origins)], limit=1)
             company_id = procurements[0].company_id
             if not po:
-                # We need a rule to generate the PO. However the rule generated
-                # the same domain for PO and the _prepare_purchase_order method
-                # should only uses the common rules's fields.
-                vals = rules[0]._prepare_purchase_order(company_id, origins, [p.values for p in procurements])
-                # The company_id is the same for all procurements since
-                # _make_po_get_domain add the company in the domain.
-                # We use SUPERUSER_ID since we don't want the current user to be follower of the PO.
-                # Indeed, the current user may be a user without access to Purchase, or even be a portal user.
-                po = self.env['purchase.order'].with_context(force_company=company_id.id).with_user(SUPERUSER_ID).create(vals)
+                #MV15 
+                positive_values = [p.values for p in procurements if float_compare(p.product_qty, 0.0, precision_rounding=p.product_uom.rounding) >= 0]
+                if positive_values:
+                    # We need a rule to generate the PO. However the rule generated
+                    # the same domain for PO and the _prepare_purchase_order method
+                    # should only uses the common rules's fields.
+                    #MV15 vals = rules[0]._prepare_purchase_order(company_id, origins, [p.values for p in procurements])
+                    vals = rules[0]._prepare_purchase_order(company_id, origins, positive_values)
+                    # The company_id is the same for all procurements since
+                    # _make_po_get_domain add the company in the domain.
+                    # We use SUPERUSER_ID since we don't want the current user to be follower of the PO.
+                    # Indeed, the current user may be a user without access to Purchase, or even be a portal user.
+                    #MV15 po = self.env['purchase.order'].with_context(force_company=company_id.id).with_user(SUPERUSER_ID).create(vals)
+                    po = self.env['purchase.order'].with_company(company_id).with_user(SUPERUSER_ID).create(vals)
             else:
                 # If a purchase order is found, adapt its `origin` field.
                 if po.origin:
@@ -105,23 +134,48 @@ class XenonStockRule(models.Model):
                         procurement.values, po_line)
                     po_line.write(vals)
                 else:
+                    #MV15 
+                    if float_compare(procurement.product_qty, 0, precision_rounding=procurement.product_uom.rounding) <= 0:
+                        # If procurement contains negative quantity, don't create a new line that would contain negative qty
+                        continue
                     # If it does not exist a PO line for current procurement.
                     # Generate the create values for it and add it to a list in
                     # order to create it in batch.
                     partner = procurement.values['supplier'].name
-                    po_line_values.append(self._prepare_purchase_order_line(
+                    #MV15 po_line_values.append(self._prepare_purchase_order_line(
+                    #MV15     procurement.product_id, procurement.product_qty,
+                    #MV15     procurement.product_uom, procurement.company_id,
+                    #MV15     procurement.values, po))
+                    po_line_values.append(self.env['purchase.order.line']._prepare_purchase_order_line_from_procurement(
                         procurement.product_id, procurement.product_qty,
                         procurement.product_uom, procurement.company_id,
                         procurement.values, po))
+                    #MV15 
+                    # Check if we need to advance the order date for the new line
+                    order_date_planned = procurement.values['date_planned'] - relativedelta(
+                        days=procurement.values['supplier'].delay)
+                    if fields.Date.to_date(order_date_planned) < fields.Date.to_date(po.date_order):
+                        po.date_order = order_date_planned
             self.env['purchase.order.line'].sudo().create(po_line_values)
 
     @api.model
     def _get_procurements_to_merge_groupby(self, procurement):
-        return procurement.product_id, procurement.product_uom, procurement.values['propagate_date'], procurement.values['propagate_date_minimum_delta'], procurement.values['propagate_cancel']
+        #MV15 return procurement.product_id, procurement.product_uom, procurement.values['propagate_date'], procurement.values['propagate_date_minimum_delta'], procurement.values['propagate_cancel']
+        # Do not group procument from different orderpoint. 1. _quantity_in_progress
+        # directly depends from the orderpoint_id on the line. 2. The stock move
+        # generated from the order line has the orderpoint's location as
+        # destination location. In case of move_dest_ids those two points are not
+        # necessary anymore since those values are taken from destination moves.
+        return procurement.product_id, procurement.product_uom, procurement.values['propagate_cancel'],\
+            procurement.values.get('product_description_variants'),\
+            (procurement.values.get('orderpoint_id') and not procurement.values.get('move_dest_ids')) and procurement.values['orderpoint_id']
 
     @api.model
     def _get_procurements_to_merge_sorted(self, procurement):
-        return procurement.product_id.id, procurement.product_uom.id, procurement.values['propagate_date'], procurement.values['propagate_date_minimum_delta'], procurement.values['propagate_cancel']
+        #MV15 return procurement.product_id.id, procurement.product_uom.id, procurement.values['propagate_date'], procurement.values['propagate_date_minimum_delta'], procurement.values['propagate_cancel']
+        return procurement.product_id.id, procurement.product_uom.id, procurement.values['propagate_cancel'],\
+            procurement.values.get('product_description_variants'),\
+            (procurement.values.get('orderpoint_id') and not procurement.values.get('move_dest_ids')) and procurement.values['orderpoint_id']
 
     @api.model
     def _get_procurements_to_merge(self, procurements):
@@ -176,7 +230,12 @@ class XenonStockRule(models.Model):
     def _update_purchase_order_line(self, product_id, product_qty, product_uom, company_id, values, line):
         partner = values['supplier'].name
         procurement_uom_po_qty = product_uom._compute_quantity(product_qty, product_id.uom_po_id)
-        seller = product_id.with_context(force_company=company_id.id)._select_seller(
+        #MV15 seller = product_id.with_context(force_company=company_id.id)._select_seller(
+        #MV15     partner_id=partner,
+        #MV15     quantity=line.product_qty + procurement_uom_po_qty,
+        #MV15     date=line.order_id.date_order and line.order_id.date_order.date(),
+        #MV15     uom_id=product_id.uom_po_id)
+        seller = product_id.with_company(company_id)._select_seller(
             partner_id=partner,
             quantity=line.product_qty + procurement_uom_po_qty,
             date=line.order_id.date_order and line.order_id.date_order.date(),
@@ -197,6 +256,7 @@ class XenonStockRule(models.Model):
             res['orderpoint_id'] = orderpoint_id.id
         return res
 
+    ''' #MV15 
     @api.model
     def _prepare_purchase_order_line(self, product_id, product_qty, product_uom, company_id, values, po):
         partner = values['supplier'].name
@@ -245,6 +305,7 @@ class XenonStockRule(models.Model):
             'order_id': po.id,
             'move_dest_ids': [(4, x.id) for x in values.get('move_dest_ids', [])],
         }
+        '''
 
     def _prepare_purchase_order(self, company_id, origins, values):
         """ Create a purchase order for procuremets that share the same domain
@@ -255,7 +316,7 @@ class XenonStockRule(models.Model):
         dates = [fields.Datetime.from_string(value['date_planned']) for value in values]
 
         procurement_date_planned = min(dates)
-        schedule_date = (procurement_date_planned - relativedelta(days=company_id.po_lead))
+        #MV15 schedule_date = (procurement_date_planned - relativedelta(days=company_id.po_lead))
         supplier_delay = max([int(value['supplier'].delay) for value in values])
 
         # Since the procurements are grouped if they share the same domain for
@@ -264,14 +325,17 @@ class XenonStockRule(models.Model):
         # arbitrary procurement. In this case the first.
         values = values[0]
         partner = values['supplier'].name
-        purchase_date = schedule_date - relativedelta(days=supplier_delay)
+        #MV15 purchase_date = schedule_date - relativedelta(days=supplier_delay)
+        purchase_date = procurement_date_planned - relativedelta(days=supplier_delay)
 
-        fpos = self.env['account.fiscal.position'].with_context(force_company=company_id.id).get_fiscal_position(partner.id)
+        #MV15 fpos = self.env['account.fiscal.position'].with_context(force_company=company_id.id).get_fiscal_position(partner.id)
+        fpos = self.env['account.fiscal.position'].with_company(company_id).get_fiscal_position(partner.id)
 
         gpo = self.group_propagation_option
         group = (gpo == 'fixed' and self.group_id.id) or \
                 (gpo == 'propagate' and values.get('group_id') and values['group_id'].id) or False
-
+        
+        ''' #MV15 
         return {
             'partner_id': partner.id,
             'user_id': False,
@@ -285,6 +349,20 @@ class XenonStockRule(models.Model):
             'fiscal_position_id': fpos,
             'group_id': group
         }
+        '''
+        return {
+            'partner_id': partner.id,
+            'user_id': False,
+            'picking_type_id': self.picking_type_id.id,
+            'company_id': company_id.id,
+            'currency_id': partner.with_company(company_id).property_purchase_currency_id.id or company_id.currency_id.id,
+            'dest_address_id': values.get('partner_id', False),
+            'origin': ', '.join(origins),
+            'payment_term_id': partner.with_company(company_id).property_supplier_payment_term_id.id,
+            'date_order': purchase_date,
+            'fiscal_position_id': fpos.id,
+            'group_id': group
+        }
 
     def _make_po_get_domain(self, company_id, values, partner):
         gpo = self.group_propagation_option
@@ -296,7 +374,17 @@ class XenonStockRule(models.Model):
             ('state', '=', 'draft'),
             ('picking_type_id', '=', self.picking_type_id.id),
             ('company_id', '=', company_id.id),
+            #MV15 
+            ('user_id', '=', False),
         )
+        #MV15 
+        if values.get('orderpoint_id'):
+            procurement_date = fields.Date.to_date(values['date_planned']) - relativedelta(days=int(values['supplier'].delay))
+            delta_days = int(self.env['ir.config_parameter'].sudo().get_param('purchase_stock.delta_days_merge') or 0)
+            domain += (
+                ('date_order', '<=', datetime.combine(procurement_date + relativedelta(days=delta_days), datetime.max.time())),
+                ('date_order', '>=', datetime.combine(procurement_date - relativedelta(days=delta_days), datetime.min.time()))
+            )
         if group:
             domain += (('group_id', '=', group.id),)
         return domain

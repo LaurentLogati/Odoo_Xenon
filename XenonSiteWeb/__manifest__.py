@@ -9,4 +9,12 @@
     'css' : ['static/src/css/theme_xenon.scss'],
 	'demo':[],
     'installable': True,
+    'assets': {
+        'web.assets_backend': [
+            'XenonSiteWeb/static/src/css/theme_xenon.scss',
+        ],
+        'web.assets_frontend': [
+            'XenonSiteWeb/static/src/css/theme_xenon.scss',
+        ],
+    },
 }

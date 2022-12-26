@@ -33,7 +33,7 @@
                 <attribute name="invisible">True</attribute>        
             </xpath> 
             <button name="action_quotation_send" position="replace">
-                <button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary"/>             
+                <button name="action_quotation_send" string="Envoyer par mail LLO" type="object" states="tosend" class="btn-primary" data-hotkey="g"/> 
             </button>
             <button name="action_cancel" position="replace">
                 <button name="action_cancel" states="draft,wait,tosend,sent,sale" type="object" string="Annuler"/>
