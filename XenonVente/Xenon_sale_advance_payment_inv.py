@@ -32,17 +32,19 @@ class XenonSaleAdvancePaymentInv(models.TransientModel):
     def _prepare_invoice_values(self, order, name, amount, so_line, x_type):
         invoice_vals = {
             'ref': order.client_order_ref,
-            'type': 'out_invoice',
+            'move_type': 'out_invoice',
             'invoice_origin': order.name,
             'invoice_user_id': order.user_id.id,
             'narration': order.note,
             'partner_id': order.partner_invoice_id.id,
-            'fiscal_position_id': order.fiscal_position_id.id or order.partner_id.property_account_position_id.id,
+            'fiscal_position_id': (order.fiscal_position_id or order.fiscal_position_id.get_fiscal_position(order.partner_id.id)).id,
             'partner_shipping_id': order.partner_shipping_id.id,
             'currency_id': order.pricelist_id.currency_id.id,
-            'invoice_payment_ref': order.reference,
+            # MV15 'invoice_payment_ref': order.reference,
+            'payment_reference': order.reference,
             'invoice_payment_term_id': order.payment_term_id.id,
-            'invoice_partner_bank_id': order.company_id.partner_id.bank_ids[:1].id,
+            # MV15 'invoice_partner_bank_id': order.company_id.partner_id.bank_ids[:1].id,
+            'partner_bank_id': order.company_id.partner_id.bank_ids[:1].id,
             'team_id': order.team_id.id,
             'campaign_id': order.campaign_id.id,
             'medium_id': order.medium_id.id,
@@ -57,7 +59,7 @@ class XenonSaleAdvancePaymentInv(models.TransientModel):
                 'tax_ids': [(6, 0, so_line.tax_id.ids)],
                 'sale_line_ids': [(6, 0, [so_line.id])],
                 'analytic_tag_ids': [(6, 0, so_line.analytic_tag_ids.ids)],
-                'analytic_account_id': order.analytic_account_id.id or False,
+                'analytic_account_id': order.analytic_account_id.id if not so_line.display_type and order.analytic_account_id.id else False,
             })],
         }
 
