@@ -412,15 +412,15 @@ class XenonSuiviFinancier(models.TransientModel):
         # Francisation des types d'écritures
         sql_query += '''
         , TypeEcriture as (
-        select type as typeO, 
-        case when type='entry' then 'ecriture' 
-        when type='out_invoice' then 'facture_client' 
-        when type='in_invoice' then 'facture_frs'
-        when type='out_refund' then 'avoir_client'
-        when type='in_refund' then 'avoir_frs'
+        select move_type as typeO, 
+        case when move_type='entry' then 'ecriture' 
+        when move_type='out_invoice' then 'facture_client' 
+        when move_type='in_invoice' then 'facture_frs'
+        when move_type='out_refund' then 'avoir_client'
+        when move_type='in_refund' then 'avoir_frs'
         else 'autre' end as typeF
         from account_move
-        group by type
+        group by move_type
         )
         '''
 
@@ -481,7 +481,7 @@ class XenonSuiviFinancier(models.TransientModel):
 			left join product_product pp on pp.id=aml.product_id
 			left join product_template pt on pt.id =pp.product_tmpl_id
 			left join res_partner rpliv ON rpliv.id=so.partner_id--am.partner_shipping_id
-            left join TypeEcriture te on te.typeO=am.type
+            left join TypeEcriture te on te.typeO=am.move_type
             
         WHERE
             am.date >= %s
@@ -507,7 +507,7 @@ class XenonSuiviFinancier(models.TransientModel):
 			affat.idclientliv, rpliv.name, affat.devisclient,
 			--am.partner_shipping_id, am.partner_id, rpliv.name,
 			pp.id, pp.default_code, pt.id, pt.name, pt.type,
-			am.id, am.ref, am.state, am.type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
+			am.id, am.ref, am.state, am.move_type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
 			aml.id, aml.sequence, aml.name,
 			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type,
             aat.name
@@ -566,7 +566,7 @@ class XenonSuiviFinancier(models.TransientModel):
 			left join product_product pp on pp.id=aml.product_id
 			left join product_template pt on pt.id =pp.product_tmpl_id
 			left join res_partner rpliv ON rpliv.id=so.partner_id--am.partner_shipping_id
-            left join TypeEcriture te on te.typeO=am.type
+            left join TypeEcriture te on te.typeO=am.move_type
         WHERE
             am.date >= %s
             AND am.date <= %s
@@ -592,7 +592,7 @@ class XenonSuiviFinancier(models.TransientModel):
 			affat.idclientliv, rpliv.name, affat.devisclient,
 			--am.partner_shipping_id, am.partner_id, rpliv.name,
 			pp.id, pp.default_code, pt.id, pt.name, pt.type,
-			am.id, am.ref, am.state, am.type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
+			am.id, am.ref, am.state, am.move_type, te.typeF, am.invoice_origin, am.invoice_partner_display_name,
 			aml.id, aml.sequence, aml.name,
 			aml.quantity, aml.price_unit, aml.discount, aml.price_subtotal, aml.display_type,
             aat.name
