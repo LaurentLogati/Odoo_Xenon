@@ -290,7 +290,7 @@ class XenonSuiviFinancier(models.TransientModel):
             LEFT JOIN account_move am ON am.id=aml.move_id
             JOIN account_account aa ON aa.id = aml.account_id
             LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-            LEFT JOIN account_group ag ON ag.id=aa.group_id
+            LEFT JOIN account_group ag ON ag.id=aa.x_group_id
             INNER JOIN res_company rcomp on rcomp.id=am.company_id
             inner join account_fiscal_year EF on EF.company_id=rcomp.id and am.date < EF.date_from
         WHERE
@@ -374,7 +374,7 @@ class XenonSuiviFinancier(models.TransientModel):
             LEFT JOIN res_partner rp ON rp.id=aml.partner_id
             JOIN account_account aa ON aa.id = aml.account_id
             LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-            LEFT JOIN account_group ag ON ag.id=aa.group_id
+            LEFT JOIN account_group ag ON ag.id=aa.x_group_id
             INNER JOIN res_company rcomp on rcomp.id=am.company_id
             inner join account_fiscal_year EF on EF.company_id=rcomp.id and am.date < EF.date_from
         WHERE
@@ -468,7 +468,7 @@ class XenonSuiviFinancier(models.TransientModel):
             LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
             LEFT JOIN res_currency rc ON rc.id = aml.currency_id
             LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
-            LEFT JOIN account_group ag ON ag.id=aa.group_id
+            LEFT JOIN account_group ag ON ag.id=aa.x_group_id
             INNER JOIN res_company rcomp on rcomp.id=am.company_id
             INNER JOIN account_fiscal_year EF on EF.company_id=rcomp.id and am.date between EF.date_from and EF.date_to
 			left join account_analytic_account aac on aac.id=aml.analytic_account_id
@@ -552,7 +552,7 @@ class XenonSuiviFinancier(models.TransientModel):
             LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
             LEFT JOIN res_currency rc ON rc.id = aml.currency_id
             LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
-            LEFT JOIN account_group ag ON ag.id=aa.group_id
+            LEFT JOIN account_group ag ON ag.id=aa.x_group_id
             INNER JOIN res_company rcomp on rcomp.id=am.company_id
             INNER JOIN account_fiscal_year EF on EF.company_id=rcomp.id and am.date between EF.date_from and EF.date_to
             
@@ -941,7 +941,7 @@ class XenonSuiviFinancier(models.TransientModel):
         
 		  from BudgetEnLigne B0
 		 inner join account_account C0 on C0.id=B0.x_compte
-		 inner join account_group C1 on C1.id=C0.group_id
+		 inner join account_group C1 on C1.id=C0.x_group_id
 		 inner join Company S0 on S0.id=x_company_id
          LEFT JOIN account_account_type aat ON C0.user_type_id = aat.id                                                              
 		 where B0.Statut!='cancel'
