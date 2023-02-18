@@ -29,6 +29,8 @@ class XenonSaleOrder(models.Model):
     
     #x_mto_done=fields.Boolean(string="mto fait", default=False, copy=False)
     
+    x_amount_filtre = fields.Monetary(string='Total_filtre', store=True, compute='_amount_filtre', tracking=4)
+    
     def _action_dempx(self):
         """ Implementation of additionnal mecanism of Sales Order confirmation.
             This method should be extended when the confirmation should generated
@@ -161,6 +163,20 @@ class XenonSaleOrder(models.Model):
         #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
         for ligne in cdefrs.order_line:
             ligne.update({'account_analytic_id':self.analytic_account_id})
+    
+    @api.depends('order_line.price_subtotal')
+    def _amount_filtre(self):
+        """
+        Compute the total amounts of the SO si le type d'article est produit ou le groupe d'article est sous-traitance.
+        """
+        for order in self:
+            x_amount_filtre = 0.0
+            for line in order.order_line:
+                if line.product_template_id.type=='product' or line.product_template_id.categ_id.x_filtre==True:
+                    x_amount_filtre += line.price_subtotal
+            order.update({
+                'x_amount_filtre': x_amount_filtre,
+            })
       
 class XenonSaleOrderLine(models.Model):
     _inherit= 'sale.order.line'

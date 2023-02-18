@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_category_list_view_xenon" model="ir.ui.view">
+        <field name="name">product.category.list.xenon</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_list_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='display_name']" position="after">
+                <field name="property_account_expense_categ_id"/>
+                <field name="property_account_income_categ_id"/>
+                <field name="x_filtre" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+    
+    <record id="product_category_form_view_xenon" model="ir.ui.view">
+        <field name="name">product.category.form.xenon</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='parent_id']" position="after">
+                <field name="x_filtre"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
