@@ -10,6 +10,7 @@ from . import Xenon_portal
 from . import Xenon_account_move
 from . import Xenon_sale_advance_payment_inv
 from . import Xenon_account_payment
+from . import Xenon_product
 
 from odoo.api import Environment, SUPERUSER_ID
 
