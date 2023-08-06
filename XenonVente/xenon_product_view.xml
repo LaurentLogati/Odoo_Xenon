@@ -23,4 +23,58 @@
             </xpath>
         </field>
     </record>
+	
+	<!--Nom de l article modifiable seulement à partir de progdigital et suppression du bouton créer-->
+    <record id="product_template_form_view_xenon" model="ir.ui.view">
+        <field name="name">product.template.common.form.xenon</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="readonly">True</attribute> 
+            </xpath>
+            <xpath expr="/form" position="attributes">
+                <attribute name="create">false</attribute>
+            </xpath>
+        </field>
+    </record>
+	
+	<!--Suppression du bouton créer un article dans les vues-->
+    <record id="product_template_kanban_view_xenon" model="ir.ui.view">
+        <field name="name">Product.template.product.kanban.xenon</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_kanban_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="/kanban" position="attributes">
+                <attribute name="create">false</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_template_tree_view_xenon" model="ir.ui.view">
+        <field name="name">product.template.product.tree.xenon</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="/tree" position="attributes">
+                <attribute name="create">false</attribute>
+            </xpath>
+        </field>
+    </record>
+	
+	<!-- addons/stock/views/product_views.xml
+    changement du nom qté disponible ou en prévision On hand
+    vue product_template_kanban_stock_view (Product Template Kanban Stock) désactivée via ihm menu technique-->
+    <record model="ir.ui.view" id="product_template_kanban_stock_view_xenon">
+            <field name="name">Product Template Kanban Stock Xenon</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_kanban_view"/>
+            <field name="mode">primary</field>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='product_lst_price']" position="after">
+                    <div>Disponible: <field name="qty_available"/> <field name="uom_id"/></div>
+                    <div>Prévisions: <field name="virtual_available"/> <field name="uom_id"/></div>
+                </xpath>
+            </field>
+        </record>
 </odoo>
