@@ -36,6 +36,9 @@
             <xpath expr="/form" position="attributes">
                 <attribute name="create">false</attribute>
             </xpath>
+			<xpath expr="//field[@name='active']" position="before">
+                <field name="x_emplacement"/>
+            </xpath>															
         </field>
     </record>
 	
@@ -59,6 +62,9 @@
             <xpath expr="/tree" position="attributes">
                 <attribute name="create">false</attribute>
             </xpath>
+			<xpath expr="//field[@name='uom_id']" position="after">
+                <field name="x_emplacement" optional="show"/>
+            </xpath>
         </field>
     </record>
 	
@@ -77,4 +83,15 @@
                 </xpath>
             </field>
         </record>
+	<!-- regroupement de la liste d'article par x_emplacement-->
+    <record id="product_template_search_view_xenon" model="ir.ui.view">
+        <field name="name">product.template.search.xenon</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search[1]/group[1]/filter[@name='categ_id']" position="after">
+                <filter name="xenon_x_emplacement" string="Emplacements de stock" context="{'group_by': 'x_emplacement'}"/>
+            </xpath>
+        </field>
+    </record>															
 </odoo>
