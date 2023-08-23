@@ -19,3 +19,8 @@ class XenonProductCategory(models.Model):
     _inherit='product.category'
     
     x_filtre = fields.Boolean(string="filtre", default=False, copy=False)
+    
+class XenonProductProduct(models.Model): #product template !!!!!!!!
+    _inherit = "product.template"
+
+    x_emplacement = fields.Many2one('stock.location', 'Emplacement')

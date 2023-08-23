@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inventory Adjustments view -->
+    <record model="ir.ui.view" id="view_stock_quant_tree_inventory_editable_xenon">
+        <field name="name">stock.quant.inventory.tree.editable.xenon</field>
+        <field name="inherit_id" ref="stock.view_stock_quant_tree_inventory_editable"/>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='location_id']" position="after">
+                <field name="x_emplacement" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- regroupement de la liste d'article par x_emplacement-->
+    <record id="quant_search_view_xenon" model="ir.ui.view">
+        <field name="name">stock.quant.search.xenon</field>
+        <field name="model">stock.quant</field>
+        <field name="inherit_id" ref="stock.quant_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search[1]/field[@name='owner_id']" position="after">
+                <field name="x_emplacement"/>
+            </xpath>
+            <!--<xpath expr="//search[1]/group[2]/filter[@name='company']" position="after">
+                <filter name="xenon_x_emplacement" string="Emplacements de stock" context="{'group_by': 'x_emplacement'}"/>
+            </xpath>-->
+        </field>
+    </record>
+    
+</odoo>
