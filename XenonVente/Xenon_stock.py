@@ -23,3 +23,4 @@ class XenonStockQuant(models.Model):
         'product.template', string='Product Template',
         related='product_id.product_tmpl_id')
     x_emplacement= fields.Many2one(related='product_tmpl_id.x_emplacement') #OK MAIS PAS DE GROUP BY !!!
+    x_emplacement2= fields.Many2one(related='product_tmpl_id.x_emplacement2') #OK MAIS PAS DE GROUP BY !!!

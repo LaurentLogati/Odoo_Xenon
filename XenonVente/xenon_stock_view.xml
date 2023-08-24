@@ -7,7 +7,8 @@
         <field name="model">stock.quant</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='location_id']" position="after">
-                <field name="x_emplacement" optional="show"/>
+                <field name="x_emplacement" string="Emplacement Fly" optional="show"/>
+                <field name="x_emplacement2" string="Emplacement ASA" optional="show"/>
             </xpath>
         </field>
     </record>
@@ -19,7 +20,8 @@
         <field name="inherit_id" ref="stock.quant_search_view"/>
         <field name="arch" type="xml">
             <xpath expr="//search[1]/field[@name='owner_id']" position="after">
-                <field name="x_emplacement"/>
+                <field name="x_emplacement" string="Emplacement Fly"/>
+                <field name="x_emplacement2" string="Emplacement ASA"/>
             </xpath>
             <!--<xpath expr="//search[1]/group[2]/filter[@name='company']" position="after">
                 <filter name="xenon_x_emplacement" string="Emplacements de stock" context="{'group_by': 'x_emplacement'}"/>

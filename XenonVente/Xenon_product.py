@@ -23,4 +23,5 @@ class XenonProductCategory(models.Model):
 class XenonProductProduct(models.Model): #product template !!!!!!!!
     _inherit = "product.template"
 
-    x_emplacement = fields.Many2one('stock.location', 'Emplacement')
+    x_emplacement = fields.Many2one('stock.location', 'Emplacement') #Fly
+    x_emplacement2 = fields.Many2one('stock.location', 'Emplacement') #ASA
