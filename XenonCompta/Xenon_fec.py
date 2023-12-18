@@ -619,7 +619,7 @@ class XenonAccountFrFec(models.TransientModel):
             coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
             replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
             replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
-            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 10) AS PieceRef,
+            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 20) AS PieceRef,
             CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
         FROM
             account_move_line aml
@@ -654,7 +654,7 @@ class XenonAccountFrFec(models.TransientModel):
             coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
             replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
             replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
-            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 10) AS PieceRef,
+            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 20) AS PieceRef,
             CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
         FROM
             account_move_line aml
