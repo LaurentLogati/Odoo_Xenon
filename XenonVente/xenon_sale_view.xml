@@ -32,7 +32,8 @@
             <xpath expr="//button[@name='action_quotation_send'][3]" position="attributes">   
                 <attribute name="invisible">True</attribute>        
             </xpath> 
-            <button name="action_quotation_send" position="replace">
+            <!--<button name="action_quotation_send" position="replace"> installation module site e-commerce--> 
+			<button name="action_quotation_send" position="after">
                 <button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary" data-hotkey="g"/> 
             </button>
             <button name="action_cancel" position="replace">
