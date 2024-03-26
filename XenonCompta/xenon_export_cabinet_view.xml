@@ -5,9 +5,8 @@
     <field name="model">account.fr.fec</field>
     <field name="inherit_id" ref="l10n_fr_fec.account_fr_fec_view"/>
     <field name="arch" type="xml">
-    <xpath expr="//button[@name='generate_fec']" position="replace">  
-        <button name="generate_fec_xenon" string="FEC" type="object" class="oe_highlight"/> 
-        <button name="generate_export_cabinet_xenon" string="Export cabinet" type="object" class="oe_highlight"/>       
+    <xpath expr="//button[@name='generate_fec']" position="after">  
+        <button name="generate_fec_cabinet" string="Export cabinet" type="object" class="oe_highlight"/>       
     </xpath> 
     </field>
 </record>
