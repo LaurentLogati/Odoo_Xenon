@@ -345,16 +345,13 @@ class XenonAccountFrFec(models.TransientModel):
             ELSE ''
             END AS CompAuxLib,
             CASE WHEN am.ref IS null OR am.ref = ''
-            THEN
-                CASE WHEN aat.type IN ('receivable', 'payable')
-                THEN COALESCE(REGEXP_REPLACE(replace(rp.name, '|', '/'), '[\\t\\r\\n]', ' ', 'g'), '')
+            THEN 
+                CASE WHEN am.invoice_partner_display_name !=''
+                THEN am.invoice_partner_display_name
                 ELSE '-'
                 END
             ELSE 
-                CASE WHEN aat.type IN ('receivable', 'payable')
-                THEN REGEXP_REPLACE(replace(am.ref, '|', '/'), '[\\t\\r\\n]', ' ', 'g') || ' - ' || COALESCE(REGEXP_REPLACE(replace(rp.name, '|', '/'), '[\\t\\r\\n]', ' ', 'g'), '')
-                ELSE REGEXP_REPLACE(replace(am.ref, '|', '/'), '[\\t\\r\\n]', ' ', 'g')
-                END
+                REGEXP_REPLACE(replace(am.ref, '|', '/'), '[\\t\\r\\n]', ' ', 'g') || ' - ' || am.invoice_partner_display_name
             END
             AS PieceRef,
             TO_CHAR(COALESCE(am.invoice_date, am.date), 'YYYYMMDD') AS PieceDate,
