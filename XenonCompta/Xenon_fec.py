@@ -345,11 +345,7 @@ class XenonAccountFrFec(models.TransientModel):
             ELSE ''
             END AS CompAuxLib,
             CASE WHEN am.ref IS null OR am.ref = ''
-            THEN 
-                CASE WHEN am.invoice_partner_display_name !=''
-                THEN am.invoice_partner_display_name
-                ELSE '-'
-                END
+            THEN '-'
             ELSE 
                 REGEXP_REPLACE(replace(am.ref, '|', '/'), '[\\t\\r\\n]', ' ', 'g') || ' - ' || am.invoice_partner_display_name
             END
