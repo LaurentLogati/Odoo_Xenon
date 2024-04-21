@@ -272,7 +272,10 @@ class XenonAccountFrFec(models.TransientModel):
             THEN COALESCE(replace(rp.name, '|', '/'), '')
             ELSE ''
             END AS CompAuxLib,
-            '-' AS PieceRef,
+            CASE WHEN aat.type IN ('receivable', 'payable')
+            THEN COALESCE(replace(rp.name, '|', '/'), '')
+            ELSE '-'
+            END AS PieceRef,
             %s AS PieceDate,
             '/' AS EcritureLib,
             replace(CASE WHEN sum(aml.balance) <= 0 THEN '0,00' ELSE to_char(SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Debit,
@@ -343,13 +346,19 @@ class XenonAccountFrFec(models.TransientModel):
             END AS CompAuxLib,
             CASE WHEN am.ref IS null OR am.ref = ''
             THEN '-'
-            ELSE REGEXP_REPLACE(replace(am.ref, '|', '/'), '[\\t\\r\\n]', ' ', 'g')
+            ELSE 
+                REGEXP_REPLACE(replace(am.ref, '|', '/'), '[\\t\\r\\n]', ' ', 'g') || ' - ' || am.invoice_partner_display_name
             END
             AS PieceRef,
             TO_CHAR(COALESCE(am.invoice_date, am.date), 'YYYYMMDD') AS PieceDate,
             CASE WHEN aml.name IS NULL OR aml.name = '' THEN '/'
                 WHEN aml.name SIMILAR TO '[\\t|\\s|\\n]*' THEN '/'
-                ELSE replace(REGEXP_REPLACE(replace(aml.name, '|', '/'), '[\\t\\n\\r]', ' ', 'g'),';','') END AS EcritureLib,
+                ELSE 
+                    CASE WHEN substring(aa.code,1,3)='445'
+                    THEN am.invoice_partner_display_name
+                    ELSE replace(REGEXP_REPLACE(replace(aml.name, '|', '/'), '[\\t\\n\\r]', ' ', 'g'),';','') 
+                    END
+                END AS EcritureLib,
             replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
             replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
             CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet,
