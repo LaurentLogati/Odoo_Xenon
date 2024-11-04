@@ -12,3 +12,8 @@
 	path = OCA/web
 	url = git@github.com:OCA/web.git
 	branch = 15.0
+
+[submodule "OCA/account-closing"]
+	path = OCA/account-closing
+	url = git@github.com:OCA/account-closing.git
+	branch = 15.0
