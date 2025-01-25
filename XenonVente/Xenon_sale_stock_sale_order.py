@@ -25,14 +25,22 @@ class XenonSaleOrder(models.Model):
     
 class XenonSaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
+
+    x_website_id = fields.Many2one(related='order_id.website_id', store=True, copy=False, string='Website')
     
-    
-    @api.depends('product_id', 'product_uom_qty', 'qty_delivered', 'state', 'product_uom')
+    @api.depends('product_type', 'product_uom_qty', 'qty_delivered', 'state', 'move_ids', 'product_uom')
     def _compute_qty_to_deliver(self):
         """Compute the visibility of the inventory widget."""
         for line in self:
             line.qty_to_deliver = line.product_uom_qty - line.qty_delivered
-            if line.state == 'wait' and line.product_type == 'product' and line.product_uom and line.qty_to_deliver > 0:
+            if line.state in ('draft', 'sent', 'sale') and line.product_type == 'product' and line.product_uom and line.qty_to_deliver > 0 and line.x_website_id.id==1:
+                _logger.info('logLLO_venteweb')
+                if line.state == 'sale' and not line.move_ids:
+                    line.display_qty_widget = False
+                else:
+                    line.display_qty_widget = True
+            elif line.state == 'wait' and line.product_type == 'product' and line.product_uom and line.qty_to_deliver > 0:
+                _logger.info('logLLO_venteprog')
                 line.display_qty_widget = True
             else:
                 line.display_qty_widget = False
@@ -41,7 +49,12 @@ class XenonSaleOrderLine(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         lines = super(XenonSaleOrderLine, self).create(vals_list)
-        lines.filtered(lambda line: line.state == 'wait')._action_launch_stock_rule()
+        if lines.x_website_id.id == 1:
+            _logger.info('logLLO_venteweb2')
+            lines.filtered(lambda line: line.state =='sale')._action_launch_stock_rule()
+        else:
+            _logger.info('logLLO_venteprog2')
+            lines.filtered(lambda line: line.state =='wait')._action_launch_stock_rule()
         return lines
 
     def write(self, values):
@@ -77,8 +90,12 @@ class XenonSaleOrderLine(models.Model):
         for line in self:
             _logger.info('logLLO_action_dempx_10' + str(line))
             line = line.with_company(line.company_id)
-            if line.state != 'wait' or not line.product_id.type in ('consu','product'):
-                continue
+            if line.x_website_id.id == 1:
+                if line.state != 'sale' or not line.product_id.type in ('consu','product'):
+                    continue
+            else:
+                if line.state != 'wait' or not line.product_id.type in ('consu','product'):
+                    continue
             qty = line._get_qty_procurement(previous_product_uom_qty)
             _logger.info('logLLO_action_dempx_6b' + str(qty))
             if float_compare(qty, line.product_uom_qty, precision_digits=precision) == 0:
