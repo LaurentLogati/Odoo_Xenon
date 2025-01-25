@@ -91,14 +91,14 @@ class XenonPurchaseOrder(models.Model):
 
                     rec_liste=self.env['sale.order'].search([('name','=', self.origin)])
                     for commande in rec_liste:
-                        lignecommande=commande.env['sale.order.line'].search([('order_id','=',commande.id)]) ###('display_type','=','')
+                        lignecommande=commande.env['sale.order.line'].search([('order_id','=',commande.id),('company_id','=',self.company_id.id)]) ###('display_type','=','')
                         pxtousok=0
                         for ligne in lignecommande:
                             if ligne.x_px_maj==False and not ligne.display_type:
                                 pxtousok=pxtousok+1
                                 if ligne.product_id==line.product_id and partner in line.product_id.seller_ids.mapped('name'):
                                     pourcentage=self._calcul_marge(partner, catart, typeart, price)
-                                    ligne.update({'price_unit':price * (1 + (pourcentage/100)), 'x_px_maj':True})
+                                    ligne.update({'price_unit':price * (1 + (pourcentage/100)), 'x_px_maj':True, 'purchase_price': price})
                                     pxtousok=pxtousok-1
                                     # Mise à jour du prix de vente dans la fiche article
                                     # Mise à jour coût avec le dernier px d'achat /!\ attention ne met à jour que pour la société en cours pour le coût !!!!!!! ### MEP_07.1 
