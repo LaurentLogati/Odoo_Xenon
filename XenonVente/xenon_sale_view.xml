@@ -26,7 +26,7 @@
                 <button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary" data-hotkey="g"/> 
             </button>
 		<button name="action_quotation_send" position="before">
-                <button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary" data-hotkey="g"/> 
+                <!--<button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary" data-hotkey="g"/>--> 
                 <button name="action_dempx" id="action_dempx"
                         string="DemandePx" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', 'not in', ['draft'])]}"
