@@ -53,6 +53,12 @@ class XenonSaleOrder(models.Model):
                     list_art.append(art.product_id.id)
                     #commande.env['sale.order.line'].search([('order_id','=',commande.id)])
         order.order_line.sudo()._maj_ligne_sans_dem_px(list_art)
+        nbligne_x_px_maj=self.env['sale.order.line'].search_count([('order_id', '=', self.id),('x_px_maj', '!=', 't'), ('display_type', '!=', 'line_section')])
+        if nbligne_x_px_maj==0:
+            self.write({
+            'state': 'tosend',
+            'date_order': fields.Datetime.now(),
+            })
         if not list_art:
             self.write({
             'state': 'tosend',
