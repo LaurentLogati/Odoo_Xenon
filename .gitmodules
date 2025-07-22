@@ -17,3 +17,8 @@
 	path = OCA/edi
 	url = git@github.com:OCA/edi.git
 	branch = 15.0
+
+[submodule "OCA/storage"]
+	path = OCA/storage
+	url = git@github.com:OCA/storage.git
+	branch = 15.0
