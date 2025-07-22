@@ -22,3 +22,8 @@
 	path = OCA/storage
 	url = git@github.com:OCA/storage.git
 	branch = 15.0
+
+[submodule "OCA/connector"]
+	path = OCA/connector
+	url = git@github.com:OCA/connector.git
+	branch = 15.0
