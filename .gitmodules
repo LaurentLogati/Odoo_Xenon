@@ -27,3 +27,8 @@
 	path = OCA/connector
 	url = git@github.com:OCA/connector.git
 	branch = 15.0
+
+[submodule "OCA/queue"]
+	path = OCA/queue
+	url = git@github.com:OCA/queue.git
+	branch = 15.0
