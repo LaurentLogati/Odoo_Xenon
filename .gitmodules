@@ -6,7 +6,7 @@
 [submodule "OCA/margin-analysis"]
 	path = OCA/margin-analysis
 	url = git@github.com:OCA/margin-analysis.git
-	branch = 18.0
+	branch = 18.0 
 
 	
 
