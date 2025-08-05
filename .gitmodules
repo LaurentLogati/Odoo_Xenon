@@ -1,1 +1,13 @@
+[submodule "OCA/account-closing"]
+	path = OCA/account-closing
+	url = git@github.com:OCA/account-closing.git
+	branch = 18.0
 
+[submodule "OCA/margin-analysis"]
+	path = OCA/margin-analysis
+	url = git@github.com:OCA/margin-analysis.git
+	branch = 18.0
+
+	
+
+	
