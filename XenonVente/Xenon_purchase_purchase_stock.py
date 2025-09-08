@@ -6,7 +6,7 @@ from odoo.tools.float_utils import float_compare
 from dateutil import relativedelta
 from odoo.exceptions import UserError
 
-from odoo.addons.purchase.models.purchase import PurchaseOrder as Purchase
+#from odoo.addons.purchase.models.purchase import PurchaseOrder as Purchase
 
 
 class XenonPurchaseOrder(models.Model):
