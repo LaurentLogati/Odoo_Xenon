@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- PREHEADER - Add Contact, Social, Language -->
-    <template id="preheader" inherit_id="website.layout" name="preHeader">
+    <!--<template id="preheader" inherit_id="website.layout" name="preHeader">
       <xpath expr="//div[@id='wrapwrap']/header/nav" position="replace">
         <nav id="preheader">
           <div class="container">
@@ -19,7 +19,7 @@
                     <b>
                       <a href="https://gestion.progdigital.fr/login" data-original-title="" title="" aria-describedby="tooltip318685" target="_blank">ESPACE CLIENT</a>
                     </b>
-                  </li>
+                  </li>-->
 				  <!--MEP_06.1 Suppression des icônes tél et mail-->
                   <!--<li class="list-inline-item home d-inline-block d-md-none">
                     <a href="/contactus"><i class="fa fa-envelope fa-1x"/>Contact</a>
@@ -33,7 +33,7 @@
                     <i class="fa fa-envelope fa-1x"/>
                     <a t-attf-href="mailto:{{ res_company.email }}" t-field="res_company.email"/>
                   </li>-->
-                </ul>
+                <!--</ul>
                 <div id="social" class="ml-auto">
                   <a t-if="website.social_facebook" t-att-href="website.social_facebook" target="_blank">
                     <i class="fa fa-facebook fa-1x"/>
@@ -80,10 +80,10 @@
           </div>
         </nav>
       </xpath>       
-    </template>
+    </template>-->
 
     <!-- Add arrow in footer copyright -->
-    <template id="add_footer_arrow" inherit_id="website.layout">
+    <!--<template id="add_footer_arrow" inherit_id="website.layout">
         <xpath expr="//div[hasclass('o_footer_copyright')]//div[hasclass('row')]/div[1]" position="attributes">
             <attribute name="class" separator=" " remove="col-lg-6" add="col-lg-5"/>
         </xpath>
@@ -95,5 +95,5 @@
                 <a href="#" class="top"><i class="fa fa-arrow-up fa-1x"/></a>
             </div>
         </xpath>
-    </template>
+    </template>-->
 </odoo>
