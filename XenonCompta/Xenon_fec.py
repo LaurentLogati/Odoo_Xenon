@@ -7,7 +7,7 @@ import base64
 import io
 
 from odoo import api, fields, models, _
-from odoo.exceptions import Warning
+#from odoo.exceptions import Warning
 from odoo.tools import float_is_zero, pycompat
 
 
