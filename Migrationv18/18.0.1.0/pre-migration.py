@@ -14,4 +14,5 @@ def migrate(cr, version):
     cr.execute("DELETE FROM ir_module_module WHERE name ILIKE 'account_invoice_start_end_dates'")
     cr.execute("DELETE FROM ir_module_module WHERE name ILIKE 'date_range'")
     cr.execute("DELETE FROM ir_module_module WHERE name ILIKE 'report_xlsx'")
+    cr.execute("DELETE FROM ir_module_module WHERE name ILIKE 'XenonCompta'")
     _logger.info('Stop script for deactivating module')
