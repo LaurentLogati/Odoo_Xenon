@@ -12,7 +12,7 @@ from odoo.tools import float_is_zero, pycompat
 
 
 class XenonAccountFrFec(models.TransientModel):
-    _inherit='account.fr.fec'
+    _inherit='l10n_fr_reports'
     
     #_name = 'account.fr.fec'
     #_description = 'Ficher Echange Informatise'
