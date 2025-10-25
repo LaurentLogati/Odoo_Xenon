@@ -19,60 +19,44 @@
                 <field name="name">budget.form.xenon</field>
                 <field name="model">x_budget</field>
                 <field name="arch" type="xml">
-                    <form>
-                        <group>
-                        <field name="x_libelle"/>
-						<field name="x_company_id"/>
-                        <field name="x_datedebut"/>
-                        <field name="x_datefin"/>
-                        <!--<field name="x_exercice"/>
-                        <field name="x_actif"/>
-                        <field name="x_statut"/>
-                        <field name="x_priorite"/>
-                        <field name="x_prevision"/>
-                        <field name="x_analytique"/>
-                        <field name="x_projet"/>
-                        <field name="x_contact"/>-->
-                        </group>
-                        <notebook>
-                            <page string="Detail">
-                                <field name="x_detail_id">
-								<field name="model">x_budget.detail</field>
-                                    <form>
-                                        <group>
-                                        <field name="x_compte"/>
-                                        <field name="x_montant_1"/>
-                                        <field name="x_montant_2"/>
-										<field name="x_montant_3"/>
-										<field name="x_montant_4"/>
-										<field name="x_montant_5"/>
-										<field name="x_montant_6"/>
-										<field name="x_montant_7"/>
-										<field name="x_montant_8"/>
-										<field name="x_montant_9"/>
-										<field name="x_montant_10"/>
-										<field name="x_montant_11"/>
-										<field name="x_montant_12"/>
-                                        </group>
-                                    </form>
-                                    <tree>
-                                        <field name="x_compte"/>
-                                        <field name="x_montant_1"/>
-                                        <field name="x_montant_2"/>
-										<field name="x_montant_3"/>
-										<field name="x_montant_4"/>
-										<field name="x_montant_5"/>
-										<field name="x_montant_6"/>
-										<field name="x_montant_7"/>
-										<field name="x_montant_8"/>
-										<field name="x_montant_9"/>
-										<field name="x_montant_10"/>
-										<field name="x_montant_11"/>
-										<field name="x_montant_12"/>
-                                    </tree>
-                                </field>
-                            </page>
-                        </notebook>
+                    <form string="Budget">
+						<sheet>
+							<group>
+								<field name="x_libelle"/>
+								<field name="x_company_id"/>
+								<field name="x_datedebut"/>
+								<field name="x_datefin"/>
+								<!--<field name="x_exercice"/>
+								<field name="x_actif"/>
+								<field name="x_statut"/>
+								<field name="x_priorite"/>
+								<field name="x_prevision"/>
+								<field name="x_analytique"/>
+								<field name="x_projet"/>
+								<field name="x_contact"/>-->
+							</group>
+							<notebook>
+								<page string="Détails du budget">
+									<field name="x_detail_id">
+										<tree editable="bottom">
+											<field name="x_compte"/>
+											<field name="x_montant_1"/>
+											<field name="x_montant_2"/>
+											<field name="x_montant_3"/>
+											<field name="x_montant_4"/>
+											<field name="x_montant_5"/>
+											<field name="x_montant_6"/>
+											<field name="x_montant_7"/>
+											<field name="x_montant_8"/>
+											<field name="x_montant_9"/>
+											<field name="x_montant_10"/>
+											<field name="x_montant_11"/>
+											<field name="x_montant_12"/>
+										</tree>
+									</field>
+								</page>
+							</notebook>
+						</sheet>
                     </form>
                 </field>
     </record>
