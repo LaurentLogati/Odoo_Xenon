@@ -69,7 +69,6 @@
             <notebook>
               <page string="Détails du budget">
                 <field name="x_detail_id"
-                       context="{'default_x_liste_ids': active_id}"
                        mode="list,form"
                        views="[(list, ref('view_budget_detail_list_xenon'))]"/>
               </page>
