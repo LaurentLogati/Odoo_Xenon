@@ -37,6 +37,7 @@
                         <notebook>
                             <page string="Detail">
                                 <field name="x_detail_id">
+								<field name="model">x_budget.detail</field>
                                     <form>
                                         <group>
                                         <field name="x_compte"/>
