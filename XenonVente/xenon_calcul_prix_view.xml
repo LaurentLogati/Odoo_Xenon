@@ -6,7 +6,7 @@
                 <field name="name">calcul.prix.liste.xenon</field>
                 <field name="model">x_calculprix</field>
                 <field name="arch" type="xml">
-                    <tree>
+                    <list>
                         <field name="x_libelle"/>
                         <field name="x_datedebut"/>
                         <field name="x_datefin"/>
@@ -15,7 +15,7 @@
                         <field name="x_typeart"/>
                         <field name="x_company_id"/>
                         <field name="x_defaut"/>
-                    </tree>
+                    </list>
                 </field>
     </record>
       
@@ -44,11 +44,11 @@
                                         <field name="x_marge"/>
                                         </group>
                                     </form>
-                                    <tree>
+                                    <list>
                                         <field name="x_min"/>
                                         <field name="x_max"/>
                                         <field name="x_marge"/>
-                                    </tree>
+                                    </list>
                                 </field>
                             </page>
                         </notebook>
@@ -59,7 +59,7 @@
     <record model="ir.actions.act_window" id="calculprix_action">
       <field name="name">XenonCalculPrix</field>
       <field name="res_model">x_calculprix</field>
-      <field name="view_mode">tree,form</field>
+      <field name="view_mode">list,form</field>
     </record>
       
     <menuitem id="calculprix_config"
