@@ -6,12 +6,12 @@
                 <field name="name">budget.liste.xenon</field>
                 <field name="model">x_budget</field>
                 <field name="arch" type="xml">
-                    <tree>
+                    <list>
                         <field name="x_libelle"/>
 						<field name="x_company_id"/>
                         <field name="x_datedebut"/>
                         <field name="x_datefin"/>
-                    </tree>
+                    </list>
                 </field>
     </record>
       
