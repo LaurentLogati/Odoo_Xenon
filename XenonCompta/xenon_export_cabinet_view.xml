@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-<record id="account_fr_fec_view_xenon" model="ir.ui.view">
-    <field name="name">account.fr.fec.form.xenon</field>
-    <field name="model">account.fr.fec</field>
-    <field name="inherit_id" ref="l10n_fr_fec.account_fr_fec_view"/>
-    <field name="arch" type="xml">
-    <xpath expr="//button[@name='generate_fec']" position="after">  
-        <button name="generate_fec_cabinet" string="Export cabinet" type="object" class="oe_highlight"/>       
-    </xpath> 
-    </field>
-</record>
+<!-- <record id="account_fr_fec_view_xenon" model="ir.ui.view"> -->
+    <!-- <field name="name">account.fr.fec.form.xenon</field> -->
+    <!-- <field name="model">account.fr.fec</field> -->
+    <!-- <field name="inherit_id" ref="l10n_fr_fec.account_fr_fec_view"/> -->
+    <!-- <field name="arch" type="xml"> -->
+    <!-- <xpath expr="//button[@name='generate_fec']" position="after">   -->
+        <!-- <button name="generate_fec_cabinet" string="Export cabinet" type="object" class="oe_highlight"/>        -->
+    <!-- </xpath>  -->
+    <!-- </field> -->
+<!-- </record> -->
 </odoo>
