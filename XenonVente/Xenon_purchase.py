@@ -68,14 +68,14 @@ class XenonPurchaseOrder(models.Model):
                     partner = self.partner_id if not self.partner_id.parent_id else self.partner_id.parent_id
                     catart = line.product_id.product_tmpl_id.categ_id
                     typeart = line.product_id.product_tmpl_id.type                                                                    
-                    if line.product_id and partner in line.product_id.seller_ids.mapped('name'):
+                    if line.product_id and partner in line.product_id.seller_ids.mapped('partner_id'):
                         # Convert the price in the right currency.
                         currency = partner.property_purchase_currency_id or self.env.company.currency_id
                         price = self.currency_id._convert(line.price_unit, currency, line.company_id, line.date_order or fields.Date.today(), round=False)
                         if line.product_id.product_tmpl_id.uom_po_id != line.product_uom:
                             default_uom = line.product_id.product_tmpl_id.uom_po_id
                             price = line.product_uom._compute_price(price, default_uom)
-                        self.env['product.supplierinfo'].search([('name','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
+                        self.env['product.supplierinfo'].search([('partner_id','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
                     else:
                         raise UserError(_(str(partner.name) + " n''est pas associé au produit %s. Veuillez définir ce fournisseur dans la liste des prix des fournisseurs du produit.") % (line.product_id.display_name,))
                         
@@ -96,7 +96,7 @@ class XenonPurchaseOrder(models.Model):
                         for ligne in lignecommande:
                             if ligne.x_px_maj==False and not ligne.display_type:
                                 pxtousok=pxtousok+1
-                                if ligne.product_id==line.product_id and partner in line.product_id.seller_ids.mapped('name'):
+                                if ligne.product_id==line.product_id and partner in line.product_id.seller_ids.mapped('partner_id'):
                                     pourcentage=self._calcul_marge(partner, catart, typeart, price)
                                     ligne.update({'price_unit':price * (1 + (pourcentage/100)), 'x_px_maj':True, 'purchase_price': price})
                                     pxtousok=pxtousok-1
@@ -131,14 +131,14 @@ class XenonPurchaseOrder(models.Model):
                     partner = self.partner_id if not self.partner_id.parent_id else self.partner_id.parent_id
                     catart = line.product_id.product_tmpl_id.categ_id
                     typeart = line.product_id.product_tmpl_id.type
-                    if line.product_id and partner in line.product_id.seller_ids.mapped('name'):              
+                    if line.product_id and partner in line.product_id.seller_ids.mapped('partner_id'):              
                         # Convert the price in the right currency.
                         currency = partner.property_purchase_currency_id or self.env.company.currency_id
                         price = self.currency_id._convert(line.price_unit, currency, line.company_id, line.date_order or fields.Date.today(), round=False)
                         if line.product_id.product_tmpl_id.uom_po_id != line.product_uom:
                             default_uom = line.product_id.product_tmpl_id.uom_po_id
                             price = line.product_uom._compute_price(price, default_uom)
-                        self.env['product.supplierinfo'].search([('name','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
+                        self.env['product.supplierinfo'].search([('partner_id','=',partner.id),('product_tmpl_id','=',line.product_id.product_tmpl_id.id)]).update({'price': price})
                     # Mise à jour du prix de vente dans la fiche article
                     # + Mise à jour coût avec le dernier px d'achat /!\ attention ne met à jour que pour la société en cours pour le coût !!!!!!! ### MEP_07.1
                     pourcentage=self._calcul_marge(partner, catart, typeart, price)
@@ -236,6 +236,11 @@ class XenonPurchaseOrder(models.Model):
         _logger.info('logLLO_pourc ' + str(pourcentage))
         return pourcentage  
 
+    def action1(self):
+        for order in self:
+            # Ici tu mets ton code métier
+            order.message_post(body="Action 1 exécutée")
+        return True
             
 class XenonPurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line' 

@@ -57,7 +57,7 @@ class XenonSaleOrder(models.Model):
             action.update({
                 'name': _("Purchase Order generated from %s", self.name),
                 'domain': [('id', 'in', purchase_order_ids)],
-                'view_mode': 'tree,form',
+                'view_mode': 'list,form',
             })
         return action
 
@@ -105,15 +105,14 @@ class XenonSaleOrderLine(models.Model):
 
     @api.depends('purchase_line_ids')
     def _compute_purchase_count(self):
-        database_data = self.env['purchase.order.line'].sudo().read_group([('sale_line_id', 'in', self.ids)], ['sale_line_id'], ['sale_line_id'])
-        mapped_data = dict([(db['sale_line_id'][0], db['sale_line_id_count']) for db in database_data])
+        database_data = self.env['purchase.order.line'].sudo()._read_group([('sale_line_id', 'in', self.ids)], ['sale_line_id'], ['__count'])
+        mapped_data = {sale_line.id: count for sale_line, count in database_data}
         for line in self:
             line.purchase_line_count = mapped_data.get(line.id, 0)
 
     @api.onchange('product_uom_qty')
     def _onchange_service_product_uom_qty(self):
-        if self.state == 'sale' and self.product_id.type == 'service' and self.product_id.service_to_purchase:
-            if self.product_uom_qty < self._origin.product_uom_qty:
+        if self.state == 'sale' and self.product_id.type == 'service' and self.product_id.with_company(self._purchase_service_get_company()).service_to_purchase:
                 if self.product_uom_qty < self.qty_delivered:
                     return {}
                 warning_mess = {
@@ -143,8 +142,8 @@ class XenonSaleOrderLine(models.Model):
         decreased_values = {}
         if 'product_uom_qty' in values:
             precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
-            increased_lines = self.sudo().filtered(lambda r: r.product_id.service_to_purchase and r.purchase_line_count and float_compare(r.product_uom_qty, values['product_uom_qty'], precision_digits=precision) == -1)
-            decreased_lines = self.sudo().filtered(lambda r: r.product_id.service_to_purchase and r.purchase_line_count and float_compare(r.product_uom_qty, values['product_uom_qty'], precision_digits=precision) == 1)
+            increased_lines = self.sudo().filtered(lambda r: r.product_id.with_company(r._purchase_service_get_company()).service_to_purchase and r.purchase_line_count and float_compare(r.product_uom_qty, values['product_uom_qty'], precision_digits=precision) == -1)
+            decreased_lines = self.sudo().filtered(lambda r: r.product_id.with_company(r._purchase_service_get_company()).service_to_purchase and r.purchase_line_count and float_compare(r.product_uom_qty, values['product_uom_qty'], precision_digits=precision) == 1)
             increased_values = {line.id: line.product_uom_qty for line in increased_lines}
             decreased_values = {line.id: line.product_uom_qty for line in decreased_lines}
 
@@ -204,6 +203,9 @@ class XenonSaleOrderLine(models.Model):
         commitment_date = fields.Datetime.from_string(self.order_id.commitment_date or fields.Datetime.now())
         return commitment_date - relativedelta(days=int(supplierinfo.delay))
 
+    def _purchase_service_get_company(self):
+        return self.company_id
+
     def _purchase_service_prepare_order_values(self, supplierinfo):
         """ Returns the values to create the purchase order from the current SO line.
             :param supplierinfo: record of product.supplierinfo
@@ -250,51 +252,48 @@ class XenonSaleOrderLine(models.Model):
             date=purchase_order.date_order and purchase_order.date_order.date(), # and purchase_order.date_order[:10],
             uom_id=self.product_id.uom_po_id
         )
-        #MV15 fpos = purchase_order.fiscal_position_id
-        #MV15 taxes = fpos.map_tax(self.product_id.supplier_taxes_id) if fpos else self.product_id.supplier_taxes_id
-        #MV15 if taxes:
-        #MV15     taxes = taxes.filtered(lambda t: t.company_id.id == self.company_id.id)
-        supplier_taxes = self.product_id.supplier_taxes_id.filtered(lambda t: t.company_id.id == self.company_id.id)
-        taxes = purchase_order.fiscal_position_id.map_tax(supplier_taxes)
-        
-        # compute unit price
-        price_unit = 0.0
-        product_ctx = {
-            'lang': get_lang(self.env, purchase_order.partner_id.lang).code,
-            'company_id': purchase_order.company_id,
-        }
-        
-        if supplierinfo:
-            price_unit = self.env['account.tax'].sudo()._fix_tax_included_price_company(
-                supplierinfo.price, supplier_taxes, taxes, self.company_id)
-            if purchase_order.currency_id and supplierinfo.currency_id != purchase_order.currency_id:
-                price_unit = supplierinfo.currency_id._convert(price_unit, purchase_order.currency_id, purchase_order.company_id, fields.datetime.today())
-            product_ctx.update({'seller_id': supplierinfo.id})
-        else:
-            product_ctx.update({'partner_id': purchase_order.partner_id.id})
+                                                                                                                    
+                                                                         
 
-        # purchase line description in supplier lang
-        #MV15 product_in_supplier_lang = self.product_id.with_context(
-        #MV15     lang=supplierinfo.name.lang,
-        #MV15     partner_id=supplierinfo.name.id,
-        #MV15 )
-        #MV15 name = '[%s] %s' % (self.product_id.default_code, product_in_supplier_lang.display_name)
-        #MV15 if product_in_supplier_lang.description_purchase:
-        #MV15     name += '\n' + product_in_supplier_lang.description_purchase
-            
+        price_unit, taxes = self._purchase_service_get_price_unit_and_taxes(supplierinfo, purchase_order)
+        name = self._purchase_service_get_product_name(supplierinfo, purchase_order, quantity)
+                       
+                                                                            
+                                                    
+         
+                        
+                                                                                        
+                                                                           
+                                                                                                     
+                                                                                                                                                                                                                        
+                                                              
+             
+                                                                            
 
-        return {
-            #MV15 'name': '[%s] %s' % (self.product_id.default_code, self.name) if self.product_id.default_code else self.name,
-            'name': self.product_id.with_context(**product_ctx).display_name,
+                                                             
+                                   
+                                        
+                                                       
+
+        line_description = self.with_context(lang=self.order_id.partner_id.lang)._get_sale_order_line_multiline_description_variants()
+        if line_description:
+            name += line_description
+
+        purchase_line_vals = {
+            'name': name,
             'product_qty': purchase_qty_uom,
             'product_id': self.product_id.id,
             'product_uom': self.product_id.uom_po_id.id,
             'price_unit': price_unit,
-            'date_planned': fields.Date.from_string(purchase_order.date_order) + relativedelta(days=int(supplierinfo.delay)),
+            'date_planned': purchase_order.date_order + relativedelta(days=int(supplierinfo.delay)),
             'taxes_id': [(6, 0, taxes.ids)],
             'order_id': purchase_order.id,
             'sale_line_id': self.id,
+            'discount': supplierinfo.discount,
         }
+        if self.analytic_distribution:
+            purchase_line_vals['analytic_distribution'] = self.analytic_distribution
+        return purchase_line_vals
     
     #########################
     def _purchase_service_create(self, quantity=False):
@@ -303,44 +302,41 @@ class XenonSaleOrderLine(models.Model):
             a new PO line. The created purchase order line will be linked to the SO line.
             :param quantity: the quantity to force on the PO line, expressed in SO line UoM
         """
-        PurchaseOrder = self.env['purchase.order']
+        #PurchaseOrder = self.env['purchase.order']
         supplier_po_map = {}
         sale_line_purchase_map = {}
         for line in self:
-            line = line.with_company(line.company_id)
+            line = line.with_company(line._purchase_service_get_company())
             # determine vendor of the order (take the first matching company and product)
-            suppliers = line.product_id._select_seller(quantity=line.product_uom_qty, uom_id=line.product_uom)
+            suppliers = line._purchase_service_match_supplier()
             
             if not suppliers:
                 raise UserError(_("There is no vendor associated to the product %s. Please define a vendor for this product.") % (line.product_id.display_name,))
             supplierinfo = suppliers[0]
-            partner_supplier = supplierinfo.name  # yes, this field is not explicit .... it is a res.partner !
+            partner_supplier = supplierinfo.partner_id
 
             # determine (or create) PO
             cde_origine = line.order_id.name ###LLO
             purchase_order = supplier_po_map.get(partner_supplier.id)
             if not purchase_order:
-                purchase_order = PurchaseOrder.search([
-                    ('partner_id', '=', partner_supplier.id),
-                    ('state', '=', 'draft'),
-                    ('company_id', '=', line.company_id.id),
-                    ('origin','=', cde_origine),
-                ], limit=1)
-            if not purchase_order:
-                values = line._purchase_service_prepare_order_values(supplierinfo)
-                purchase_order = PurchaseOrder.with_context(mail_create_nosubscribe=True).create(values)
+                purchase_order = line._match_or_create_purchase_order(supplierinfo)
+                #purchase_order = PurchaseOrder.search([
+                #    ('partner_id', '=', partner_supplier.id),
+                #    ('state', '=', 'draft'),
+                #    ('company_id', '=', line.company_id.id),
+                #    ('origin','=', cde_origine),
+                #], limit=1)
+            #if not purchase_order:
+            #    values = line._purchase_service_prepare_order_values(supplierinfo)
+            #    purchase_order = PurchaseOrder.with_context(mail_create_nosubscribe=True).create(values)
                 # Mise à jour de la commande en statut attentePrix (sinon la commande a déjà été mise à jour en statut à envoyer // ordre du code) 
                 self.env['sale.order'].search([('name','=',cde_origine)]).update({'state': 'wait'})
-            else:  # update origin of existing PO
+            #else:  # update origin of existing PO
                 so_name = line.order_id.name
-                origins = []
-                if purchase_order.origin:
-                    origins = purchase_order.origin.split(', ') + origins
+                origins = (purchase_order.origin or '').split(', ')
                 if so_name not in origins:
-                    origins += [so_name]
-                    purchase_order.write({
-                        'origin': ', '.join(origins)
-                    })
+                    purchase_order.write({'origin': ', '.join(origins + [so_name])})
+                   
             supplier_po_map[partner_supplier.id] = purchase_order
 
             # add a PO line to the PO
@@ -359,6 +355,7 @@ class XenonSaleOrderLine(models.Model):
         """
         sale_line_purchase_map = {}
         for line in self:
+            line = line.with_company(line._purchase_service_get_company())
             # Do not regenerate PO line if the SO line has already created one in the past (SO cancel/reconfirmation case)
             if line.product_id.service_to_purchase and not line.purchase_line_count:
                 result = line._purchase_service_create()
