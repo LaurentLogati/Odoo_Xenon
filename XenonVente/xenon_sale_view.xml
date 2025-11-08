@@ -5,48 +5,61 @@
             <field name="model">sale.order</field>
 			<field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
-            <xpath expr="//button[@name='action_confirm'][1]" position="attributes">   
-                <attribute name="invisible">True</attribute>        
-            </xpath>  
-            <xpath expr="//button[@name='action_confirm'][2]" position="attributes">   
-                <attribute name="invisible">True</attribute>        
-            </xpath>
-		<button name="action_confirm" position="attributes">
-                	<attribute name="invisible">True</attribute> 
-		</button>
-		
-            <xpath expr="//button[@name='action_quotation_send'][2]" position="attributes">   
-                <attribute name="invisible">True</attribute>        
-            </xpath>  
-            <xpath expr="//button[@name='action_quotation_send'][3]" position="attributes">   
-                <attribute name="invisible">True</attribute>        
-            </xpath> 
-            <!--<button name="action_quotation_send" position="replace"> installation module site e-commerce--> 
-			<button name="action_quotation_send" position="after">
-                <button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary" data-hotkey="g"/> 
-            </button>
-		<button name="action_quotation_send" position="before">
-                <!--<button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary" data-hotkey="g"/>--> 
-                <button name="action_dempx" id="action_dempx"
-                        string="DemandePx" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', 'not in', ['draft'])]}"
-                        confirm="Etes-vous sûr(e) d'avoir sélectionné le bon entrepôt ?"/>
-                <button name="action_confirmx" id="action_confirmx"
-                        string="Confirmer" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', 'not in', ['sent'])]}"/>
-                <button name="action_aenvoyerx" id="action_aenvoyerx"
-                        string="A envoyer" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', 'not in', ['wait'])]}"/>
-				<button name="action_confirmersansmailx" id="action_confirmersansmailx"
-                        string="Confirmer sans envoi mail" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', 'not in', ['tosend'])]}"/>
-            </button>
-            <button name="action_cancel" position="replace">
-                <button name="action_cancel" states="draft,wait,tosend,sent,sale" type="object" string="Annuler"/>
-            </button>
-			<field name="state" position="replace">
-				<field name="state" widget="statusbar" statusbar_visible="draft,wait,tosend,sent,sale"/>
-            </field>
+                <xpath expr="//button[@name='action_confirm'][1]" position="attributes">   
+                    <attribute name="invisible">True</attribute>        
+                </xpath>  
+                <xpath expr="//button[@name='action_confirm'][2]" position="attributes">   
+                    <attribute name="invisible">True</attribute>        
+                </xpath>
+        		<button name="action_confirm" position="attributes">
+                    <attribute name="invisible">True</attribute> 
+        		</button>
+    		
+                <xpath expr="//button[@name='action_quotation_send'][2]" position="attributes">   
+                    <attribute name="invisible">True</attribute>        
+                </xpath>  
+                <xpath expr="//button[@name='action_quotation_send'][3]" position="attributes">   
+                    <attribute name="invisible">True</attribute>        
+                </xpath> 
+                <!--<button name="action_quotation_send" position="replace"> installation module site e-commerce--> 
+    			<button name="action_quotation_send" position="after">
+                    <button 
+                        name="action_quotation_send" 
+                        string="Envoyer par mail" 
+                        type="object" 
+                        modifiers="tosend" 
+                        class="btn-primary" 
+                        data-hotkey="g"
+                        invisible="state not in [&quot;tosend&quot;]"/> 
+                </button>
+                <!--<xpath expr="//form[1]/header[1]/field[@name='state']" position="after">
+                    <button string="InDraft" name="sale.action_mass_cancel_orders" type="action" invisible="state in [&quot;draft&quot;]"/>
+                </xpath>
+                <xpath expr="//form[1]/header[1]/field[@name='state']" position="after">
+                    <button string="NotinDraft" name="sale.action_mass_cancel_orders" type="action" invisible="state not in [&quot;draft&quot;]"/>
+                </xpath>-->
+        		<button name="action_quotation_send" position="before">
+                    <!--<button name="action_quotation_send" string="Envoyer par mail" type="object" states="tosend" class="btn-primary" data-hotkey="g"/>--> 
+                    <button name="action_dempx" id="action_dempx"
+                            string="DemandePx" class="btn-primary" type="object"
+                            invisible="state not in [&quot;draft&quot;]"
+                            confirm="Etes-vous sûr(e) d'avoir sélectionné le bon entrepôt ?"/>
+                    <button name="action_confirmx" id="action_confirmx"
+                            string="Confirmer" class="btn-primary" type="object"
+                            invisible="state not in [&quot;sent&quot;]"/>
+                    <button name="action_aenvoyerx" id="action_aenvoyerx"
+                            string="A envoyer" class="btn-primary" type="object"
+                            invisible="state not in [&quot;wait&quot;]"/>/>
+    				<button name="action_confirmersansmailx" id="action_confirmersansmailx"
+                            string="Confirmer sans envoi mail" class="btn-primary" type="object"
+                            invisible="state not in [&quot;tosend&quot;]"/>/>
+                </button>
+                <button name="action_cancel" position="replace">
+                    <button name="action_cancel" type="object" string="Annuler"/>
+                </button>
+    			<field name="state" position="replace">
+    				<field name="state" widget="statusbar" statusbar_visible="draft,wait,tosend,sent,sale"/>
+                </field>
 			</field>
  </record>
  
@@ -72,3 +85,5 @@
         </field>
     </record>
 </odoo>
+
+
