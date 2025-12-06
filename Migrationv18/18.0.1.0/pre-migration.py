@@ -2,6 +2,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 #pour commit
+#pour commit 2
     
 def migrate(cr, version):
     _logger.info('Start script for deactivating module')
