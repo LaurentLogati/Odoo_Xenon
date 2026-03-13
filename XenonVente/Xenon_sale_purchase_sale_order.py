@@ -40,7 +40,7 @@ class XenonSaleOrder(models.Model):
             # 2️ Cas fallback : aucune relation → recherche via le champ origin
             if not purchase_orders:
                 purchase_orders = self.env['purchase.order'].search([
-                    ('origin', '=', order.name)
+                    ('origin', '=', order.name), ('company_id', '=', order.company_id.id)
                 ])
     
             order.purchase_order_count = len(purchase_orders)
@@ -87,38 +87,7 @@ class XenonSaleOrder(models.Model):
     #        })
     #    return action
 
-    def action_view_purchase_orders(self):
-        """Open linked purchase orders (direct or via origin)."""
-        self.ensure_one()
     
-        # Récupération des commandes fournisseurs liées
-        purchase_orders = self.order_line.mapped('purchase_line_ids.order_id')
-        if not purchase_orders:
-            purchase_orders = self.env['purchase.order'].search([
-                ('origin', '=', self.name)
-            ])
-    
-        action = {
-            'type': 'ir.actions.act_window',
-            'name': 'Purchase Orders',
-            'res_model': 'purchase.order',
-            'view_mode': 'tree,form',
-            'target': 'current',
-        }
-    
-        if len(purchase_orders) > 1:
-            action['domain'] = [('id', 'in', purchase_orders.ids)]
-        elif purchase_orders:
-            action['views'] = [(self.env.ref('purchase.purchase_order_form').id, 'form')]
-            action['res_id'] = purchase_orders.id
-        else:
-            action = {'type': 'ir.actions.act_window_close'}
-    
-        return action
-
-
-    def _get_purchase_orders(self):
-        return self.order_line.purchase_line_ids.order_id
 
     def _activity_cancel_on_purchase(self):
         """ If some SO are cancelled, we need to put an activity on their generated purchase. If sale lines of
@@ -326,32 +295,14 @@ class XenonSaleOrderLine(models.Model):
             date=purchase_order.date_order and purchase_order.date_order.date(), # and purchase_order.date_order[:10],
             uom_id=self.product_id.uom_po_id
         )
-                                                                                                                    
-                                                                         
-
+                                                            
         price_unit, taxes = self._purchase_service_get_price_unit_and_taxes(supplierinfo, purchase_order)
         name = self._purchase_service_get_product_name(supplierinfo, purchase_order, quantity)
-                       
-                                                                            
-                                                    
-         
-                        
-                                                                                        
-                                                                           
-                                                                                                     
-                                                                                                                                                                                                                        
-                                                              
-             
-                                                                            
-
-                                                             
-                                   
-                                        
-                                                       
-
+                                               
         line_description = self.with_context(lang=self.order_id.partner_id.lang)._get_sale_order_line_multiline_description_variants()
         if line_description:
             name += line_description
+
 
         purchase_line_vals = {
             'name': name,
@@ -365,9 +316,11 @@ class XenonSaleOrderLine(models.Model):
             'sale_line_id': self.id,
             'discount': supplierinfo.discount,
         }
+
         if self.analytic_distribution:
             purchase_line_vals['analytic_distribution'] = self.analytic_distribution
         return purchase_line_vals
+
     
     #########################
     def _purchase_service_create(self, quantity=False):
@@ -418,6 +371,7 @@ class XenonSaleOrderLine(models.Model):
             purchase_line = line.env['purchase.order.line'].create(values)
             # Les articles de type service avec l'option de réapprovisionnement font l'objet d'une demande de prix
             line.update({'x_px_maj':False}) ###LLO
+                
             # link the generated purchase to the SO line
             sale_line_purchase_map.setdefault(line, line.env['purchase.order.line'])
             sale_line_purchase_map[line] |= purchase_line
@@ -427,6 +381,7 @@ class XenonSaleOrderLine(models.Model):
         """ Create a Purchase for the first time from the sale line. If the SO line already created a PO, it
             will not create a second one.
         """
+            
         sale_line_purchase_map = {}
         for line in self:
             line = line.with_company(line._purchase_service_get_company())

@@ -39,7 +39,7 @@ class XenonSaleOrderLine(models.Model):
                     line.display_qty_widget = False
                 else:
                     line.display_qty_widget = True
-            elif line.state == 'draft' and line.is_storable and line.product_uom and line.qty_to_deliver > 0:
+            elif line.state == 'wait' and line.is_storable and line.product_uom and line.qty_to_deliver > 0:
                 _logger.info('logLLO_venteprog')
                 line.display_qty_widget = True
             else:
