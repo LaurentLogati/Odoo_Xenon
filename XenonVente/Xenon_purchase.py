@@ -40,21 +40,25 @@ class XenonPurchaseOrder(models.Model):
         
         #liste des utilisateurs
         partneruser=self.env['res.users'].search([('login', '!=', 'xyz')]).partner_id #liste des users
+        _logger.info('LLO_partneruser ' + str(partneruser))
         #liste des followers du devis en cours
-        followersPCH=self.env['mail.followers'].search([('res_model','=','purchase.order'),('res_id','=',self.id)])
 
-        #liste des followers ne correspondant pas à un utilisateur (pour n'avoir que des fournisseurs)
-        followersdevis=followersPCH.partner_id - partneruser
+        for order in self:
+            followersPCH=self.env['mail.followers'].search([('res_model','=','purchase.order'),('res_id','=',order.id)])
+            _logger.info('LLO_followersPCH ' + str(followersPCH))
+
+            #liste des followers ne correspondant pas à un utilisateur (pour n'avoir que des fournisseurs)
+            followersdevis=followersPCH.partner_id - partneruser
         
-        for follower in followersdevis:
-            #suppression des followers/abonnés précédents si différent du frs du devis
-            if follower.id != self.partner_id.id:
-                followersPCH.search([('partner_id', '=', follower.id)]).sudo().unlink()
-        # fin MEP_05.1
-        
-        if vals.get('date_planned'):
-            self.order_line.filtered(lambda line: not line.display_type).date_planned = vals['date_planned']
-        return res
+            for follower in followersdevis:
+                #suppression des followers/abonnés précédents si différent du frs du devis
+                if follower.id != order.partner_id.id:
+                    followersPCH.search([('partner_id', '=', follower.id)]).sudo().unlink()
+            # fin MEP_05.1
+            
+            if vals.get('date_planned'):
+                order.order_line.filtered(lambda line: not line.display_type).date_planned = vals['date_planned']
+            return res
 
 
     def attente_client_confirm(self):
@@ -241,6 +245,11 @@ class XenonPurchaseOrder(models.Model):
             # Ici tu mets ton code métier
             order.message_post(body="Action 1 exécutée")
         return True
+
+    @api.onchange('custom_state')
+    def _onchange_custom_state(self):
+        # Forcer le recalcul des mouvements liés
+        self.order_line.mapped('move_ids')._compute_forecast_information()
             
 class XenonPurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line' 
