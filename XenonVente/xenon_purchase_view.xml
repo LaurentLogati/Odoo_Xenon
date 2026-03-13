@@ -11,25 +11,60 @@
             <xpath expr="//button[@name='print_quotation'][2]" position="attributes">   
                 <attribute name="invisible">True</attribute>    
             </xpath> 
-            <xpath expr="//button[@name='button_confirm'][2]" position="attributes">  
-                <attribute name="states">tosend</attribute>
-                <attribute name="attrs">{'invisible': [('origin', '!=', False)]}</attribute>
+            <xpath expr="//button[@name='button_confirm'][1]" position="replace">
+                <!-- Affiche un bouton spécifique quand l'état = 'tosend' -->
+                <button name="button_confirm"
+                        type="object"
+                        string="Envoyer au fournisseur"
+                        class="btn-primary"
+                        groups="purchase.group_purchase_user"
+                        invisible="state not in [&quot;tosend&quot;]"/>
+            </xpath>
+
+            <!-- Et on rend ce bouton visible uniquement à l’état 'tosend' -->
+            <!--<xpath expr="//button[@name='button_confirm']" position="attributes">
+                <attribute name="modifiers">{ "invisible": [["state", "!=", "tosend"]] }</attribute>
+            </xpath>-->
+            <xpath expr="//button[@name='button_confirm'][2]" position="attributes">
+                <attribute name="invisible">True</attribute>   
+            </xpath>
+                
+             <!-- Bouton Maj devis client -->
+            <xpath expr="//header" position="inside">
+                <button name="attente_client_confirm"
+                        type="object"
+                        string="Maj devis client"
+                        class="btn-secondary"
+                        groups="purchase.group_purchase_user"
+                        invisible="state not in [&quot;sent&quot;]"/>
+            </xpath>
+
+            <xpath expr="//button[@name='attente_client_confirm']" position="attributes">
+                <attribute name="modifiers">{ "invisible": [["state", "not in", ["draft","wait"]]] }</attribute>
+            </xpath>
+                
+            <!--<xpath expr="//button[@name='button_confirm'][2]" position="attributes">  
+                <attribute name="modifiers">tosend</attribute>
+                <attribute name="modifiers">{'invisible': [('origin', '!=', False)]}</attribute>
             </xpath> 
 			<button name="button_confirm" position="replace">
                 <button name="attente_client_confirm" 
                         type="object" 
                         string="Maj devis Client" 
                         id="attente_client_confirm"
-                        attrs="{'invisible': [('state', 'in', ['draft', 'wait','tosend','purchase'])]}"/>
-			</button>
+                        modifiers="{'invisible': [('state', 'in', ['draft', 'wait','tosend','purchase'])]}"/>
+			</button>-->
             <button name="button_cancel" position="replace">
-                <button name="button_cancel" states="draft,to approve,sent,wait,tosend,purchase" string="Annuler" type="object" />
+                <button name="button_cancel" 
+                invisible="state not in [&quot;draft&quot;,&quot;to approve&quot;,&quot;sent&quot;,&quot;wait&quot;,&quot;tosend&quot;,&quot;purchase&quot;]"
+                string="Annuler" 
+                type="object" />
             </button>
 			<button name="button_done" position="after">
                 <button name="button_acompte" 
                         type="object" 
                         string="Acompte frs" 
-                        states="purchase"/>
+                        invisible="state not in [&quot;purchase&quot;]"/>
             </button> 
             <field name="state" position="replace">
 				<field name="state" widget="statusbar" statusbar_visible="draft,sent,wait,tosend,purchase" readonly="1"/>

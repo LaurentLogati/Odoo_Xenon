@@ -6,7 +6,7 @@
                 <field name="name">progdigital.liste.xenon</field>
                 <field name="model">x_progdigital</field>
                 <field name="arch" type="xml">
-                    <tree>
+                    <list>
                         <field name="x_nomclient"/>
                         <field name="x_immat"/>
 						<field name="x_maintenance"/>
@@ -20,7 +20,7 @@
                         <field name="x_trigramme"/>
                         <field name="x_datesaisie"/>
                         <field name="x_hsaisie"/>
-                    </tree>
+                    </list>
                 </field>
     </record>
       
@@ -28,7 +28,7 @@
     <record model="ir.actions.act_window" id="progdigital_action">
       <field name="name">XenonProgdigital</field>
       <field name="res_model">x_progdigital</field>
-      <field name="view_mode">tree,form</field>
+      <field name="view_mode">list,form</field>
     </record>
       
     <!--<menuitem id="menu_xenon" name="Xenon" parent="account.menu_finance" sequence="90" groups="account.group_account_manager"/>-->

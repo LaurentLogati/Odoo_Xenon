@@ -6,7 +6,7 @@
                 <field name="name">extracompta.xenon</field>
                 <field name="model">x_extracompta</field>
                 <field name="arch" type="xml">
-                    <tree>
+                    <list>
                         <field name="x_code"/>
 						<field name="x_libelle"/>
                         <field name="x_balance"/>
@@ -14,7 +14,7 @@
                         <field name="x_company_id"/>
                         <field name="x_date"/>
                         <!--<field name="x_exercice"/>-->
-                    </tree>
+                    </list>
                 </field>
     </record>
       
@@ -23,7 +23,7 @@
     <record model="ir.actions.act_window" id="extracompta_action">
       <field name="name">XenonExtracompta</field>
       <field name="res_model">x_extracompta</field>
-      <field name="view_mode">tree,form</field>
+      <field name="view_mode">list,form</field>
     </record>
       
     <!--<menuitem id="menu_xenon" name="Xenon" parent="account.menu_finance" sequence="90" groups="account.group_account_manager"/>-->

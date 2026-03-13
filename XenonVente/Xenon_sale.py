@@ -1,29 +1,62 @@
-#MV15 from odoo import models, fields, api
-from datetime import datetime, timedelta
-from itertools import groupby
 import json
-
-from odoo import api, fields, models, SUPERUSER_ID, _
-from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.osv import expression
-from odoo.tools import float_is_zero, html_keep_url, is_html_empty
-
-from odoo.addons.payment import utils as payment_utils                                        
-
 import logging
+
+from collections import defaultdict
+from datetime import timedelta
+from itertools import groupby
+
+from odoo import SUPERUSER_ID, _, api, fields, models
+from odoo.exceptions import (
+    AccessError,
+    RedirectWarning,
+    UserError,
+    ValidationError,
+)
+from odoo.fields import Command
+from odoo.http import request
+from odoo.osv import expression
+from odoo.tools import (
+    create_index,
+    float_is_zero,
+    format_amount,
+    format_date,
+    is_html_empty,
+    SQL,
+)
+from odoo.tools.mail import html_keep_url
+
+from odoo.addons.payment import utils as payment_utils
 
 _logger = logging.getLogger(__name__)
 
+INVOICE_STATUS = [
+    ('upselling', 'Upselling Opportunity'),
+    ('invoiced', 'Fully Invoiced'),
+    ('to invoice', 'To Invoice'),
+    ('no', 'Nothing to Invoice')
+]
+
+SALE_ORDER_STATE = [
+    ('draft', "Quotation"),
+    ('wait', 'Attente px'),
+    ('tosend', 'A envoyer'),
+    ('sent', "Quotation Sent"),
+    ('sale', "Sales Order"),
+    ('cancel', "Cancelled"),
+]
+
+
+
 class XenonSaleOrder(models.Model):
     _inherit='sale.order'
-  
+
     state = fields.Selection([
        ('draft', 'Quotation'),
         ('wait', 'Attente px'),
         ('tosend', 'A envoyer'),
         ('sent', 'Quotation Sent'),
         ('sale', 'Sales Order'),
-        ('done', 'Locked'),
+        #('done', 'Locked'),
         ('cancel', 'Cancelled'),
         ], string='Status', readonly=True, copy=False, index=True, tracking=3, default='draft')
     
@@ -37,13 +70,14 @@ class XenonSaleOrder(models.Model):
             other documents. In this method, the SO are in 'sale' state (not yet 'done').
         """
         # create an analytic account if at least an expense product
-        for order in self:
-            if any([expense_policy not in [False, 'no'] for expense_policy in order.order_line.mapped('product_id.expense_policy')]):
-                if not order.analytic_account_id:
-                    order._create_analytic_account()
-        #return True
-        # recherche des articles ayant fait l'objet d'une demande de prix (demande de prix non annulée MEP_01.4)
-        # les lignes d'articles qui n'auront pas fait l'objet de demande de prix seront mises à jour avec le flag de majpx à true
+        _logger.info('logLLO18_action_dempx_1')
+        #for order in self:
+        #    if any([expense_policy not in [False, 'no'] for expense_policy in order.order_line.mapped('product_id.expense_policy')]):
+        #        if not order.analytic_account_id:
+        #            order._create_analytic_account()
+        ##return True
+        ## recherche des articles ayant fait l'objet d'une demande de prix (demande de prix non annulée MEP_01.4)
+        ## les lignes d'articles qui n'auront pas fait l'objet de demande de prix seront mises à jour avec le flag de majpx à true
         for order in self:
             commandefrs = self.env['purchase.order'].search([('origin', '=', order.name),('state', '!=', 'cancel')])
             list_art=[]
@@ -68,29 +102,73 @@ class XenonSaleOrder(models.Model):
 
  
     def action_dempx(self):
-        if self._get_forbidden_state_confirm() & set(self.mapped('state')):
-            raise UserError(_(
-                'It is not allowed to confirm an order in the following states: %s'
-            ) % (', '.join(self._get_forbidden_state_confirm())))
+        _logger.info('logLLO18_action_dempx_2')
+        #if self._get_forbidden_state_confirm() & set(self.mapped('state')):
+        #    raise UserError(_(
+        #        'It is not allowed to confirm an order in the following states: %s'
+        #    ) % (', '.join(self._get_forbidden_state_confirm())))
 
-        for order in self.filtered(lambda order: order.partner_id not in order.message_partner_ids):
+        #for order in self.filtered(lambda order: order.partner_id not in order.message_partner_ids):
+        #    order.message_subscribe([order.partner_id.id])
+
+        for order in self:
+            error_msg = order._confirmation_error_message()
+            if error_msg:
+                raise UserError(error_msg)
+
+        self.order_line._validate_analytic_distribution()
+
+        for order in self:
+            if order.partner_id in order.message_partner_ids:
+                continue
             order.message_subscribe([order.partner_id.id])
-        self.write({
-            'state': 'wait',
-            'date_order': fields.Datetime.now(),
-        })
+
+        self.write(self._prepare_confirmation_values())
+
+        #for order in self:
+        #    if order.partner_id in order.message_partner_ids:
+        #        continue
+        #    order.message_subscribe([order.partner_id.id])
+        #    
+        #self.write({
+        #    'state': 'wait',
+        #    'date_order': fields.Datetime.now(),
+        #})
         #'x_mto_done':True              ############################
         
         # Context key 'default_name' is sometimes propagated up to here.
         # We don't need it and it creates issues in the creation of linked records.
         context = self._context.copy()
         context.pop('default_name', None)
+        context.pop('default_user_id', None)
 
         #self.with_context(context)._action_confirm()
         self.with_context(context)._action_dempx()
-        if self.env.user.has_group('sale.group_auto_done_setting'):
-            self.action_done()
+        #if self.env.user.has_group('sale.group_auto_done_setting'):
+        #    self.action_done()
+        self.filtered(lambda so: so._should_be_locked()).action_lock()
+
+        if self.env.context.get('send_email'):
+            self._send_order_confirmation_mail()
+            
         return True
+
+    def _prepare_confirmation_values(self):
+        """ Prepare the sales order confirmation values.
+
+        Note: self can contain multiple records.
+
+        :return: Sales Order confirmation values
+        :rtype: dict
+        """
+        _logger.info('logLLO18_prepare_confirmation_values')
+        return {
+            'state': 'wait',
+            'date_order': fields.Datetime.now()
+        }
+
+    def _get_forbidden_state_confirm(self):
+        return {'done', 'cancel'}
     
     def action_majstatut(self):
         # Modification du statut de la commande frs liée############################## utilisée lors de la validation du devis sur le portail web
@@ -98,15 +176,21 @@ class XenonSaleOrder(models.Model):
         cdefrs.update({'state':'tosend'})
         #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
         for ligne in cdefrs.order_line:
-            ligne.update({'account_analytic_id':self.analytic_account_id})
+            #ligne.update({'account_analytic_id':self.analytic_account_id})
+            # Chercher la ligne de vente correspondante (si elle existe)
+            sale_line = self.order_line.filtered(lambda l: l.product_id == ligne.product_id)
+            if sale_line and sale_line[0].analytic_distribution:
+                ligne.update({'analytic_distribution': sale_line[0].analytic_distribution})
     
-    
+
     @api.returns('mail.message', lambda value: value.id)
     def message_post(self, **kwargs):
         if self.env.context.get('mark_so_as_sent'):
             self.filtered(lambda o: o.state == 'tosend').with_context(tracking_disable=True).write({'state': 'sent'})
-            self.env.company.sudo().set_onboarding_step_done('sale_onboarding_sample_quotation_state')
-        return super(XenonSaleOrder, self.with_context(mail_post_autofollow=True)).message_post(**kwargs)
+        so_ctx = {'mail_post_autofollow': self.env.context.get('mail_post_autofollow', True)}
+        if self.env.context.get('mark_so_as_sent') and 'mail_notify_author' not in kwargs:
+            kwargs['notify_author'] = self.env.user.partner_id.id in (kwargs.get('partner_ids') or [])
+        return super(XenonSaleOrder, self.with_context(**so_ctx)).message_post(**kwargs)
 
     
 
@@ -141,7 +225,10 @@ class XenonSaleOrder(models.Model):
         
         #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
         for ligne in cdefrs.order_line:
-            ligne.update({'account_analytic_id':self.analytic_account_id})
+            # Chercher la ligne de vente correspondante (si elle existe)
+            sale_line = self.order_line.filtered(lambda l: l.product_id == ligne.product_id)
+            if sale_line and sale_line[0].analytic_distribution:
+                ligne.update({'analytic_distribution': sale_line[0].analytic_distribution})
         
         # Context key 'default_name' is sometimes propagated up to here.
         # We don't need it and it creates issues in the creation of linked records.
@@ -168,7 +255,11 @@ class XenonSaleOrder(models.Model):
         cdefrs.update({'state':'tosend'})
         #Ajout du code analytique du devis client sur les lignes du devis frs ### MEP_07.1
         for ligne in cdefrs.order_line:
-            ligne.update({'account_analytic_id':self.analytic_account_id})
+            #ligne.update({'account_analytic_id':self.analytic_account_id})
+            # Chercher la ligne de vente correspondante (si elle existe)
+            sale_line = self.order_line.filtered(lambda l: l.product_id == ligne.product_id)
+            if sale_line and sale_line[0].analytic_distribution:
+                ligne.update({'analytic_distribution': sale_line[0].analytic_distribution})
     
     @api.depends('order_line.price_subtotal')
     def _amount_filtre(self):

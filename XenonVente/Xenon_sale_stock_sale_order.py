@@ -28,18 +28,18 @@ class XenonSaleOrderLine(models.Model):
 
     x_website_id = fields.Many2one(related='order_id.website_id', store=True, copy=False, string='Website')
     
-    @api.depends('product_type', 'product_uom_qty', 'qty_delivered', 'state', 'move_ids', 'product_uom')
+    @api.depends('is_storable', 'product_uom_qty', 'qty_delivered', 'state', 'move_ids', 'product_uom')
     def _compute_qty_to_deliver(self):
         """Compute the visibility of the inventory widget."""
         for line in self:
             line.qty_to_deliver = line.product_uom_qty - line.qty_delivered
-            if line.state in ('draft', 'sent', 'sale') and line.product_type == 'product' and line.product_uom and line.qty_to_deliver > 0 and line.x_website_id.id==1:
+            if line.state in ('draft', 'sent', 'sale') and line.is_storable and line.product_uom and line.qty_to_deliver > 0 and line.x_website_id.id==1:
                 _logger.info('logLLO_venteweb')
                 if line.state == 'sale' and not line.move_ids:
                     line.display_qty_widget = False
                 else:
                     line.display_qty_widget = True
-            elif line.state == 'wait' and line.product_type == 'product' and line.product_uom and line.qty_to_deliver > 0:
+            elif line.state == 'draft' and line.is_storable and line.product_uom and line.qty_to_deliver > 0:
                 _logger.info('logLLO_venteprog')
                 line.display_qty_widget = True
             else:
@@ -66,12 +66,11 @@ class XenonSaleOrderLine(models.Model):
         previous_product_uom_qty = {line.id: line.product_uom_qty for line in lines}
         res = super(XenonSaleOrderLine, self).write(values)
         if lines:
-            lines._action_launch_stock_rule(previous_product_uom_qty)
-        #MV15
-        if 'customer_lead' in values and self.state == 'sale' and not self.order_id.commitment_date:
-            # Propagate deadline on related stock move
-            self.move_ids.date_deadline = self.order_id.date_order + timedelta(days=self.customer_lead or 0.0)
-        return res
+            lines._action_launch_stock_rule(previous_product_uom_qty=previous_product_uom_qty)
+        #if 'customer_lead' in values and self.state == 'sale' and not self.order_id.commitment_date:
+        #    # Propagate deadline on related stock move
+        #    self.move_ids.date_deadline = self.order_id.date_order + timedelta(days=self.customer_lead or 0.0)
+        #return res
     
     
     def _action_launch_stock_rule(self, previous_product_uom_qty=False):
@@ -91,10 +90,10 @@ class XenonSaleOrderLine(models.Model):
             _logger.info('logLLO_action_dempx_10' + str(line))
             line = line.with_company(line.company_id)
             if line.x_website_id.id == 1:
-                if line.state != 'sale' or not line.product_id.type in ('consu','product'):
+                if line.state != 'sale' or line.order_id.locked or line.product_id.type != 'consu':
                     continue
             else:
-                if line.state != 'wait' or not line.product_id.type in ('consu','product'):
+                if line.state != 'wait' or line.order_id.locked or line.product_id.type != 'consu':
                     continue
             qty = line._get_qty_procurement(previous_product_uom_qty)
             _logger.info('logLLO_action_dempx_6b' + str(qty))
@@ -125,11 +124,9 @@ class XenonSaleOrderLine(models.Model):
 
             line_uom = line.product_uom
             quant_uom = line.product_id.uom_id
+            origin = line.order_id.name
             product_qty, procurement_uom = line_uom._adjust_uom_quantities(product_qty, quant_uom)
-            procurements.append(self.env['procurement.group'].Procurement(
-                line.product_id, product_qty, procurement_uom,
-                line.order_id.partner_shipping_id.property_stock_customer,
-                line.product_id.display_name, line.order_id.name, line.order_id.company_id, values))
+            procurements += line._create_procurements(product_qty, procurement_uom, origin, values)
             _logger.info('logLLO_action_dempx_6f' + str(procurements))
         if procurements:
             self.env['procurement.group'].run(procurements)
@@ -142,3 +139,31 @@ class XenonSaleOrderLine(models.Model):
                 # Trigger the Scheduler for Pickings
                 pickings_to_confirm.action_confirm()
         return True
+
+    def _prepare_procurement_values(self, group_id=False):
+        """ Prepare specific key for moves or other components that will be created from a stock rule
+        coming from a sale order line. This method could be override in order to add other custom key that could
+        be used in move/po creation.
+        """
+        values = super(XenonSaleOrderLine, self)._prepare_procurement_values(group_id)
+        self.ensure_one()
+        # Use the delivery date if there is else use date_order and lead time
+        date_deadline = self.order_id.commitment_date or self._expected_date()
+        date_planned = date_deadline - timedelta(days=self.order_id.company_id.security_lead)
+        values.update({
+            'group_id': group_id,
+            'sale_line_id': self.id,
+            'date_planned': date_planned,
+            'date_deadline': date_deadline,
+            'route_ids': self.route_id,
+            #'warehouse_id': self.warehouse_id, v18 standard
+            'warehouse_id': self.order_id.warehouse_id or False,
+            'partner_id': self.order_id.partner_shipping_id.id,
+            'location_final_id': self._get_location_final(),
+            'product_description_variants': self.with_context(lang=self.order_id.partner_id.lang)._get_sale_order_line_multiline_description_variants(),
+            'company_id': self.order_id.company_id,
+            'product_packaging_id': self.product_packaging_id,
+            'sequence': self.sequence,
+            'never_product_template_attribute_value_ids': self.product_no_variant_attribute_value_ids,
+        })
+        return values
