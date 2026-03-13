@@ -24,3 +24,20 @@ class XenonStockQuant(models.Model):
         related='product_id.product_tmpl_id')
     x_emplacement= fields.Many2one(related='product_tmpl_id.x_emplacement') #OK MAIS PAS DE GROUP BY !!!
     x_emplacement2= fields.Many2one(related='product_tmpl_id.x_emplacement2') #OK MAIS PAS DE GROUP BY !!!
+
+class XenonStockMove(models.Model):
+    _inherit = 'stock.move'
+
+    def _get_forecast_availability_outgoing(self, warehouse, location_id=False):
+        filtered_moves = self.filtered(lambda m:
+            not m.sale_line_id or
+            m.sale_line_id.order_id.state in ('wait', 'tosend', 'sent', 'sale', 'done')
+        )
+        return super(XenonStockMove, filtered_moves)._get_forecast_availability_outgoing(warehouse, location_id)
+
+    def _get_forecast_availability_incoming(self, warehouse, location_id=False):
+        filtered_moves = self.filtered(lambda m:
+            not m.purchase_line_id or
+            m.purchase_line_id.order_id.state in ('wait', 'tosend', 'to approve', 'purchase', 'done')
+        )
+        return super(XenonStockMove, filtered_moves)._get_forecast_availability_incoming(warehouse, location_id)

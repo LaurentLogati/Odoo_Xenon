@@ -117,11 +117,13 @@ class XenonStockRule(models.Model):
                 po_line = po_lines._find_candidate(*procurement)
 
                 if po_line:
+                    _logger.info('logLLO_analytic1 :' + str(po_line))
                     # If the procurement can be merge in an existing line. Directly
                     # write the new values on it.
                     vals = self._update_purchase_order_line(procurement.product_id,
                         procurement.product_qty, procurement.product_uom, company_id,
                         procurement.values, po_line)
+                    _logger.info('logLLO_analytic2 :' + str(vals))
                     po_line.write(vals)
                 else:
                     #MV15 
@@ -140,6 +142,7 @@ class XenonStockRule(models.Model):
                         days=procurement.values['supplier'].delay)
                     if fields.Date.to_date(order_date_planned) < fields.Date.to_date(po.date_order):
                         po.date_order = order_date_planned
+                    _logger.info('logLLO_analytic3 :' + str(po_line_values))
             self.env['purchase.order.line'].sudo().create(po_line_values)
 
     @api.model
@@ -221,6 +224,7 @@ class XenonStockRule(models.Model):
         if price_unit and seller and line.order_id.currency_id and seller.currency_id != line.order_id.currency_id:
             price_unit = seller.currency_id._convert(
                 price_unit, line.order_id.currency_id, line.order_id.company_id, fields.Date.today())
+
 
         res = {
             'product_qty': line.product_qty + procurement_uom_po_qty,
@@ -307,7 +311,7 @@ class XenonStockRule(models.Model):
         return domain
 
     def _push_prepare_move_copy_values(self, move_to_copy, new_date):
-        res = super(StockRule, self)._push_prepare_move_copy_values(move_to_copy, new_date)
+        res = super(XenonStockRule, self)._push_prepare_move_copy_values(move_to_copy, new_date)
         res['purchase_line_id'] = None
         if self.location_dest_id.usage == "supplier":
             res['purchase_line_id'], res['partner_id'] = move_to_copy._get_purchase_line_and_partner_from_chain()
@@ -315,3 +319,32 @@ class XenonStockRule(models.Model):
 
     def _get_partner_id(self, values, rule):
         return values.get("supplierinfo_name") or (values.get("group_id") and values.get("group_id").partner_id)
+
+    def _analytic_purchase_order_line(self, po):
+        line_po
+
+        
+        partner = values['supplier'].partner_id
+        procurement_uom_po_qty = product_uom._compute_quantity(product_qty, product_id.uom_po_id, rounding_method='HALF-UP')
+
+        seller = product_id.with_company(company_id)._select_seller(
+            partner_id=partner,
+            quantity=line.product_qty + procurement_uom_po_qty,
+            date=line.order_id.date_order and line.order_id.date_order.date(),
+            uom_id=product_id.uom_po_id)
+
+        price_unit = self.env['account.tax']._fix_tax_included_price_company(seller.price, line.product_id.supplier_taxes_id, line.sudo().taxes_id, company_id) if seller else 0.0
+        if price_unit and seller and line.order_id.currency_id and seller.currency_id != line.order_id.currency_id:
+            price_unit = seller.currency_id._convert(
+                price_unit, line.order_id.currency_id, line.order_id.company_id, fields.Date.today())
+
+
+        res = {
+            'product_qty': line.product_qty + procurement_uom_po_qty,
+            'price_unit': price_unit,
+            'move_dest_ids': [(4, x.id) for x in values.get('move_dest_ids', [])]
+        }
+        orderpoint_id = values.get('orderpoint_id')
+        if orderpoint_id:
+            res['orderpoint_id'] = orderpoint_id.id
+        return res

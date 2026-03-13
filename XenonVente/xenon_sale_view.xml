@@ -5,6 +5,16 @@
             <field name="model">sale.order</field>
 			<field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
+                 <!-- On place le champ warehouse_id sous l'adresse de livraison -->
+                <xpath expr="//field[@name='partner_shipping_id']" position="after">
+                    <field name="warehouse_id" options="{'no_open': True}"/>
+                </xpath>
+                
+                <!-- Optionnel : retirer le champ de l'onglet 'Autres informations' pour éviter la duplication -->
+                <!--<xpath expr="//field[@name='warehouse_id']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>-->
+                
                 <xpath expr="//button[@name='action_confirm'][1]" position="attributes">   
                     <attribute name="invisible">True</attribute>        
                 </xpath>  

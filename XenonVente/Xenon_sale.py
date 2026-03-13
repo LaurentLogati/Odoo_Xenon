@@ -274,6 +274,12 @@ class XenonSaleOrder(models.Model):
             order.update({
                 'x_amount_filtre': x_amount_filtre,
             })
+
+    @api.onchange('custom_state')
+    def _onchange_custom_state(self):
+        # Forcer le recalcul des mouvements liés
+        self.order_line.mapped('move_ids')._compute_forecast_information()
+        
       
 class XenonSaleOrderLine(models.Model):
     _inherit= 'sale.order.line'
