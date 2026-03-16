@@ -8,7 +8,7 @@ from . import Xenon_purchase_stock_rule
 from . import Xenon_purchase_purchase_stock
 from . import Xenon_portal
 from . import Xenon_account_move
-from . import Xenon_sale_advance_payment_inv
+#from . import Xenon_sale_advance_payment_inv
 from . import Xenon_account_payment
 from . import Xenon_product
 from . import Xenon_stock
