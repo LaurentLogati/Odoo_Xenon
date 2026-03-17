@@ -252,21 +252,38 @@ class XenonPurchaseOrder(models.Model):
         self.order_line.mapped('move_ids')._compute_forecast_information()
         
     #suppression du bouton voir le devis dans la demande de prix
-    def action_rfq_send(self):
-        res = super().action_rfq_send()
-        # Désactiver le bouton portal dans le contexte de l'email RFQ
-        if isinstance(res, dict) and 'context' in res:
-            res['context']['no_button_access'] = True
-        return res
-        
-    def _notify_by_email_prepare_rendering_context(self, message, msg_vals, **kwargs):
-        render_context = super()._notify_by_email_prepare_rendering_context(
-            message, msg_vals, **kwargs
+    #def action_rfq_send(self):
+    #    res = super().action_rfq_send()
+    #    # Désactiver le bouton portal dans le contexte de l'email RFQ
+    #    if isinstance(res, dict) and 'context' in res:
+    #        res['context']['no_button_access'] = True
+    #    return res
+    #    
+    #def _notify_by_email_prepare_rendering_context(self, message, msg_vals, **kwargs):
+    #    render_context = super()._notify_by_email_prepare_rendering_context(
+    #        message, msg_vals, **kwargs
+    #    )
+    #    # Supprimer le bouton uniquement pour les RFQ (pas les PO confirmés)
+    #    if self.state in ('draft', 'sent'):
+    #        render_context['has_button_access'] = False
+    #    return render_context
+
+    #def _notify_get_action_link(self, link_type, **kwargs):
+    #    """ Supprimer le bouton portail pour les RFQ (état draft/sent) """
+    #    if link_type == 'view' and self.state in ('draft', 'sent'):
+    #        return ''
+    #    return super()._notify_get_action_link(link_type, **kwargs)
+
+    def _notify_get_recipients_groups(self, message, model_description, msg_vals=None):
+        groups = super()._notify_get_recipients_groups(
+            message, model_description, msg_vals=msg_vals
         )
-        # Supprimer le bouton uniquement pour les RFQ (pas les PO confirmés)
+        # Pour les RFQ (draft/sent), désactiver le bouton "Voir le devis"
+        # pour tous les groupes de destinataires
         if self.state in ('draft', 'sent'):
-            render_context['has_button_access'] = False
-        return render_context
+            for group_name, group_func, group_data in groups:
+                group_data['has_button_access'] = False
+        return groups
             
 class XenonPurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line' 
