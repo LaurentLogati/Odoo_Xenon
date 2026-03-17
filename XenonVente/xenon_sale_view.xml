@@ -59,7 +59,7 @@
                             invisible="state not in [&quot;sent&quot;]"/>
                     <button name="action_aenvoyerx" id="action_aenvoyerx"
                             string="A envoyer" class="btn-primary" type="object"
-                            invisible="state not in [&quot;wait&quot;]"/>/>
+                            invisible="state not in [&quot;tosend&quot;]"/>/>
     				<button name="action_confirmersansmailx" id="action_confirmersansmailx"
                             string="Confirmer sans envoi mail" class="btn-primary" type="object"
                             invisible="state not in [&quot;tosend&quot;]"/>/>

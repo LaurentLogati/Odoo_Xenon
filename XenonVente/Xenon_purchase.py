@@ -258,6 +258,15 @@ class XenonPurchaseOrder(models.Model):
         if isinstance(res, dict) and 'context' in res:
             res['context']['no_button_access'] = True
         return res
+        
+    def _notify_by_email_prepare_rendering_context(self, message, msg_vals, **kwargs):
+        render_context = super()._notify_by_email_prepare_rendering_context(
+            message, msg_vals, **kwargs
+        )
+        # Supprimer le bouton uniquement pour les RFQ (pas les PO confirmés)
+        if self.state in ('draft', 'sent'):
+            render_context['has_button_access'] = False
+        return render_context
             
 class XenonPurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line' 
