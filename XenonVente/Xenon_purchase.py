@@ -250,6 +250,14 @@ class XenonPurchaseOrder(models.Model):
     def _onchange_custom_state(self):
         # Forcer le recalcul des mouvements liés
         self.order_line.mapped('move_ids')._compute_forecast_information()
+        
+    #suppression du bouton voir le devis dans la demande de prix
+    def action_rfq_send(self):
+        res = super().action_rfq_send()
+        # Désactiver le bouton portal dans le contexte de l'email RFQ
+        if isinstance(res, dict) and 'context' in res:
+            res['context']['no_button_access'] = True
+        return res
             
 class XenonPurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line' 
