@@ -280,6 +280,21 @@ class XenonSaleOrder(models.Model):
         # Forcer le recalcul des mouvements liés
         self.order_line.mapped('move_ids')._compute_forecast_information()
         
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        moves = super()._create_invoices(grouped=grouped, final=final, date=date)
+        for move in moves:
+            sequence = 1
+            def sort_key(line):
+                # Prendre le premier SO lié, sinon chaîne vide
+                order_name = line.sale_line_ids.order_id[:1].name or 'zzz'
+                return (order_name, line.sequence)
+
+            lines_sorted = move.invoice_line_ids.sorted(key=sort_key)
+            for line in lines_sorted:
+                line.write({'sequence': sequence})
+                sequence += 1
+        return moves
+        
       
 class XenonSaleOrderLine(models.Model):
     _inherit= 'sale.order.line'

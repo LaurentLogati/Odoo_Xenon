@@ -25,23 +25,23 @@
     </record>
 	
 	<!-- Nom de l article modifiable seulement à partir de progdigital et suppression du bouton créer -->
-    <!-- <record id="product_template_form_view_xenon" model="ir.ui.view"> -->
-        <!-- <field name="name">product.template.common.form.xenon</field> -->
-        <!-- <field name="model">product.template</field> -->
-        <!-- <field name="inherit_id" ref="product.product_template_form_view"/> -->
-        <!-- <field name="arch" type="xml"> -->
+    <record id="product_template_form_view_xenon" model="ir.ui.view">
+        <field name="name">product.template.common.form.xenon</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
             <!-- <xpath expr="//field[@name='name']" position="attributes"> -->
                 <!-- <attribute name="readonly">True</attribute>  -->
             <!-- </xpath> -->
             <!-- <xpath expr="/form" position="attributes"> -->
                 <!-- <attribute name="create">false</attribute> -->
             <!-- </xpath> -->
-			<!-- <xpath expr="//field[@name='active']" position="before"> -->
-                <!-- <field name="x_emplacement" string="Emplacement Fly"/> -->
-				<!-- <field name="x_emplacement2" string="Emplacement ASA"/> -->
-            <!-- </xpath>															 -->
-        <!-- </field> -->
-    <!-- </record> -->
+			<xpath expr="//field[@name='active']" position="before">
+                <field name="x_emplacement" string="Emplacement Fly"/>
+				<field name="x_emplacement2" string="Emplacement ASA"/>
+            </xpath>
+        </field>
+    </record>
 	
 	<!-- Suppression du bouton créer un article dans les vues -->
     <!-- <record id="product_template_kanban_view_xenon" model="ir.ui.view"> -->
@@ -55,20 +55,20 @@
         <!-- </field> -->
     <!-- </record> -->
 
-    <!-- <record id="product_template_tree_view_xenon" model="ir.ui.view"> -->
-        <!-- <field name="name">product.template.product.tree.xenon</field> -->
-        <!-- <field name="model">product.template</field> -->
-        <!-- <field name="inherit_id" ref="product.product_template_tree_view"/> -->
-        <!-- <field name="arch" type="xml"> -->
+    <record id="product_template_tree_view_xenon" model="ir.ui.view">
+        <field name="name">product.template.product.tree.xenon</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
             <!-- <xpath expr="/tree" position="attributes"> -->
                 <!-- <attribute name="create">false</attribute> -->
             <!-- </xpath> -->
-			<!-- <xpath expr="//field[@name='uom_id']" position="after"> -->
-                <!-- <field name="x_emplacement" string="Emplacement Fly" optional="show"/> -->
-                <!-- <field name="x_emplacement2" string="Emplacement ASA" optional="show"/> -->
-            <!-- </xpath> -->
-        <!-- </field> -->
-    <!-- </record> -->
+			<xpath expr="//field[@name='uom_id']" position="after">
+                <field name="x_emplacement" string="Emplacement Fly" optional="show"/>
+                <field name="x_emplacement2" string="Emplacement ASA" optional="show"/>
+            </xpath>
+        </field>
+    </record>
 	
 	<!-- addons/stock/views/product_views.xml -->
     <!-- changement du nom qté disponible ou en prévision On hand -->

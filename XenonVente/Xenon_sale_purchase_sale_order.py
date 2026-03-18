@@ -255,23 +255,30 @@ class XenonSaleOrderLine(models.Model):
             :rtype: dict
         """
         self.ensure_one()
-        partner_supplier = supplierinfo.name
+        partner_supplier = supplierinfo.partner_id
         fpos = self.env['account.fiscal.position'].sudo().get_fiscal_position(partner_supplier.id)
         date_order = self._purchase_get_date_order(supplierinfo)
-        #recherche du type d'opération réception correspondant à l'entrepôt de la vente
-        type_operation_id = self.env['stock.picking.type'].search([('company_id','=',self.company_id.id),('active','=','t'),('warehouse_id','=',self.order_id.warehouse_id.id),('sequence_code','=','IN'),('name','=','Réceptions')]).id
+        # Recherche du type d'opération réception correspondant à l'entrepôt de la vente
+        type_operation_id = self.env['stock.picking.type'].search([
+            ('company_id', '=', self.company_id.id),
+            ('active', '=', 't'),
+            ('warehouse_id', '=', self.order_id.warehouse_id.id),
+            ('sequence_code', '=', 'IN'),
+            ('name', '=', 'Réceptions')
+        ]).id
         return {
             'partner_id': partner_supplier.id,
-            'partner_ref': partner_supplier.ref,
+            'partner_ref': supplierinfo.product_code or partner_supplier.ref,
             'company_id': self.company_id.id,
-            'currency_id': partner_supplier.property_purchase_currency_id.id or self.env.company.currency_id.id,
-            'dest_address_id': False, # False since only supported in stock
+            'currency_id': supplierinfo.currency_id.id or self.env.company.currency_id.id,
+            'dest_address_id': False,
             'origin': self.order_id.name,
-            'payment_term_id': partner_supplier.property_supplier_payment_term_id.id,
+            'payment_term_id': partner_supplier.property_supplier_payment_term_id.id if hasattr(partner_supplier, 'property_supplier_payment_term_id') else False,
             'date_order': date_order,
             'fiscal_position_id': fpos.id,
             'picking_type_id': type_operation_id,
         }
+    
 
     def _purchase_service_prepare_line_values(self, purchase_order, quantity=False):
         """ Returns the values to create the purchase order line from the current SO line.

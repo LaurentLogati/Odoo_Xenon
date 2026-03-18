@@ -1,0 +1,11 @@
+<odoo>
+  <data>
+    <template id="mail_notification_rfq_no_button"
+              inherit_id="mail.mail_notification_layout"
+              name="RFQ: Remove portal button">
+      <xpath expr="//td[@t-if='has_button_access']" position="attributes">
+        <attribute name="t-if">has_button_access and not ctx.get('no_button_access')</attribute>
+      </xpath>
+    </template>
+  </data>
+</odoo>
