@@ -256,7 +256,7 @@ class XenonSaleOrderLine(models.Model):
         """
         self.ensure_one()
         partner_supplier = supplierinfo.partner_id
-        fpos = self.env['account.fiscal.position'].sudo().get_fiscal_position(partner_supplier.id)
+        fpos = self.env['account.fiscal.position'].sudo()._get_fiscal_position(partner_supplier)
         date_order = self._purchase_get_date_order(supplierinfo)
         # Recherche du type d'opération réception correspondant à l'entrepôt de la vente
         type_operation_id = self.env['stock.picking.type'].search([
