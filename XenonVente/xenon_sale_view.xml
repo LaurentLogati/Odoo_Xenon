@@ -94,6 +94,20 @@
 		</xpath>
         </field>
     </record>
+	
+	<!-- Ajout filtre recherche par code analytique sur la vue liste des commandes -->
+    <record id="sale_order_view_search_analytic" model="ir.ui.view">
+        <field name="name">sale.order.search.analytic</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <search>
+                <field name="order_line"
+                       string="Code analytique"
+                       filter_domain="[('order_line.distribution_analytic_account_ids.name', 'ilike', self)]"/>
+            </search>
+        </field>
+    </record>
 </odoo>
 
 
