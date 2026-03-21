@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_picking_custom" inherit_id="stock.report_picking">
+
+        <!-- 1. Ajout du code analytique après le bloc Status/Date -->
+        <xpath expr="//div[@name='div_sched_date']" position="after">
+            <t t-if="o.sale_id">
+                <t t-set="analytic_accounts" t-value="o.sale_id.order_line.mapped('distribution_analytic_account_ids')"/>
+                <t t-if="analytic_accounts">
+                    <div class="col-auto" name="div_analytic">
+                        <strong>Code analytique :</strong>
+                        <p>
+                            <t t-foreach="analytic_accounts" t-as="account">
+                                <span t-esc="account.name"/><t t-if="not account_last">, </t>
+                            </t>
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </xpath>
+
+        <!-- 2. Remplacement colonne "De" : x_emplacement ou x_emplacement2 selon société -->
+        <xpath expr="//td[contains(@t-if, &quot;picking_type_id.code != 'incoming'&quot;)][@groups='stock.group_stock_multi_locations']" position="replace">
+            <td t-if="o.picking_type_id.code != 'incoming'" groups="stock.group_stock_multi_locations">
+                <t t-set="wh_company" t-value="o.picking_type_id.warehouse_id.company_id.name"/>
+                <!-- Société XENON AERO SERVICES (VAN, BAU, BREST, FONT, ROCHE) : x_emplacement -->
+                <t t-if="wh_company == 'XENON AERO SERVICES'">
+                    <span t-if="ml.product_id.product_tmpl_id.x_emplacement"
+                          t-esc="ml.product_id.product_tmpl_id.x_emplacement.complete_name"/>
+                    <span t-if="not ml.product_id.product_tmpl_id.x_emplacement"
+                          t-esc="ml.location_id.display_name"/>
+                </t>
+                <!-- Société XENON ASA (ASA, BDX, LRY) : x_emplacement2 -->
+                <t t-elif="wh_company == 'XENON ASA'">
+                    <span t-if="ml.product_id.product_tmpl_id.x_emplacement2"
+                          t-esc="ml.product_id.product_tmpl_id.x_emplacement2.complete_name"/>
+                    <span t-if="not ml.product_id.product_tmpl_id.x_emplacement2"
+                          t-esc="ml.location_id.display_name"/>
+                </t>
+                <!-- Autres sociétés (VG, BG, MRO, Xenon Alpha) : emplacement stock standard -->
+                <t t-else="">
+                    <span t-esc="ml.location_id.display_name"/>
+                </t>
+                <t t-if="ml.package_id">
+                    <span t-field="ml.package_id"/>
+                </t>
+            </td>
+        </xpath>
+
+    </template>
+</odoo>
