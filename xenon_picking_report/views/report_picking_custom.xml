@@ -4,11 +4,18 @@
 
         <!-- 1. Ajout du code analytique après le bloc Status/Date -->
         <xpath expr="//div[@name='div_sched_date']" position="after">
-            <t t-if="o.sale_id and o.sale_id.analytic_account_id">
-                <div class="col-auto" name="div_analytic">
-                    <strong>Code analytique :</strong>
-                    <p t-field="o.sale_id.analytic_account_id.name"/>
-                </div>
+            <t t-if="o.sale_id">
+                <t t-set="analytic_accounts" t-value="o.sale_id.order_line.mapped('distribution_analytic_account_ids')"/>
+                <t t-if="analytic_accounts">
+                    <div class="col-auto" name="div_analytic">
+                        <strong>Code analytique :</strong>
+                        <p>
+                            <t t-foreach="analytic_accounts" t-as="account">
+                                <span t-esc="account.name"/><t t-if="not account_last">, </t>
+                            </t>
+                        </p>
+                    </div>
+                </t>
             </t>
         </xpath>
 
