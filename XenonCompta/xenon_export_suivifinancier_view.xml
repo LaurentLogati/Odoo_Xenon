@@ -47,7 +47,7 @@
         <!--parent="account.menu_finance_configuration"-->
 <menuitem id="Suivifinancier_menu"
         name="Suivifinancier"
-        parent="__export__.ir_ui_menu_456_dbdec0a3"
+        parent="account.menu_finance"
         action="account_fr_suivifinancier_action"
         sequence="1"/>
 

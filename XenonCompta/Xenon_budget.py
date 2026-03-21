@@ -18,7 +18,7 @@ class XenonBudget(models.Model):
        ('draft', 'Brouillon'),
         ('cancel', 'Annulé'),
         ('validate', 'Validé'),
-        ], string='Statut', readonly=True, copy=False, index=True, tracking=3, default='draft')
+        ], string='Statut', readonly=True, copy=False, index=True, tracking=True, default='draft')
     x_priorite=fields.Integer()
     x_prevision=fields.Selection([
        ('bas', 'Basse'),

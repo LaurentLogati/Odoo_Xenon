@@ -90,7 +90,7 @@
 
     <menuitem id="menu_budget_xenon_root"
               name="Budget Xenon"
-              parent="__export__.ir_ui_menu_456_dbdec0a3"
+              parent="account.menu_finance"
               sequence="90"/>
 
     <menuitem id="menu_budget_xenon"
