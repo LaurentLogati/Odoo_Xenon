@@ -1,112 +1,66 @@
-#-*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-
 # Copyright (C) 2013-2015 Akretion (http://www.akretion.com)
 
 import base64
+import csv
 import io
 
-from odoo import api, fields, models, _
-#from odoo.exceptions import Warning
-from odoo.tools import float_is_zero, pycompat
+from odoo import fields, models, _
+from odoo.exceptions import AccessDenied, UserError
+from odoo.tools import float_is_zero
 
 
-class XenonAccountFrFec(models.TransientModel):
-    #_inherit='l10n_fr_reports'
-    _name = "xenon.account.fr.fec"
-    
-    #_name = 'account.fr.fec'
-    #_description = 'Ficher Echange Informatise'
-
-    date_from = fields.Date(string='Start Date', required=True)
-    date_to = fields.Date(string='End Date', required=True)
-    fec_data = fields.Binary('FEC File', readonly=True, attachment=False)
-    filename = fields.Char(string='Filename', size=256, readonly=True)
-    export_type = fields.Selection([
-        ('official', 'Official FEC report (posted entries only)'),
-        ('nonofficial', 'Non-official FEC report (posted and unposted entries)'),
-        ], string='Export Type', required=True, default='official')
-
-    
-
-    ####################################### Export Cabinet #######################################
-    # suppression du ";" dans les libellés
-    # suppression des lignes avec débit = 0 et crédit = 0 : AND (aml.debit != 0 OR aml.credit != 0)
-    
-    
-    @api.onchange('test_file')
-    def _onchange_export_file_cabinet(self):
-        if not self.test_file:
-            self.export_type = 'official'
+class L10nFrFecExportWizardXenon(models.TransientModel):
+    _inherit = 'l10n_fr.fec.export.wizard'
 
     def _do_query_unaffected_earnings_cabinet(self):
-        ''' Compute the sum of ending balances for all accounts that are of a type that does not bring forward the balance in new fiscal years.
-            This is needed because we have to display only one line for the initial balance of all expense/revenue accounts in the FEC.
-        '''
-
+        """
+        Calcule la somme des soldes de clôture pour tous les comptes de type
+        qui ne reportent pas le solde en début d'exercice (charges/produits).
+        """
         sql_query = '''
         SELECT
             'OUV' AS JournalCode,
-            'Balance initiale' AS JournalLib,
-            'OUVERTURE/' || %s AS EcritureNum,
             %s AS EcritureDate,
             '120/129' AS CompteNum,
             'Benefice (perte) reporte(e)' AS CompteLib,
-            '' AS CompAuxNum,
-            '' AS CompAuxLib,
-            '-' AS PieceRef,
-            %s AS PieceDate,
-            '/' AS EcritureLib,
             replace(CASE WHEN COALESCE(sum(aml.balance), 0) <= 0 THEN '0,00' ELSE to_char(SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Debit,
             replace(CASE WHEN COALESCE(sum(aml.balance), 0) >= 0 THEN '0,00' ELSE to_char(-SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Credit,
-            '' AS EcritureLet,
-            '' AS DateLet,
-            %s AS ValidDate,
-            '' AS Montantdevise,
-            '' AS Idevise
+            '-' AS PieceRef,
+            '' AS EcritureLet
         FROM
             account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
+            LEFT JOIN account_move am ON am.id = aml.move_id
             JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
         WHERE
             am.date < %s
             AND am.company_id = %s
-            AND aat.include_initial_balance IS NOT TRUE
+            AND aa.account_type NOT IN (
+                'asset_receivable', 'liability_payable',
+                'asset_cash', 'liability_credit_card',
+                'asset_current', 'liability_current',
+                'asset_non_current', 'liability_non_current',
+                'equity', 'equity_unaffected'
+            )
             AND (aml.debit != 0 OR aml.credit != 0)
         '''
-        # For official report: only use posted entries
         if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
+            sql_query += " AND am.state = 'posted'"
+
         company = self.env.company
         formatted_date_from = fields.Date.to_string(self.date_from).replace('-', '')
-        date_from = self.date_from
-        formatted_date_year = date_from.year
-        self._cr.execute(
-            sql_query, (formatted_date_year, formatted_date_from, formatted_date_from, formatted_date_from, self.date_from, company.id))
-        listrow = []
+        self._cr.execute(sql_query, (formatted_date_from, self.date_from, company.id))
         row = self._cr.fetchone()
-        listrow = list(row)
-        return listrow
+        return list(row) if row else []
 
     def _get_company_legal_data_cabinet(self, company):
-        """
-        Dom-Tom are excluded from the EU's fiscal territory
-        Those regions do not have SIREN
-        sources:
-            https://www.service-public.fr/professionnels-entreprises/vosdroits/F23570
-            http://www.douane.gouv.fr/articles/a11024-tva-dans-les-dom
-
-        * Returns the siren if the company is french or an empty siren for dom-tom
-        * For non-french companies -> returns the complete vat number
-        """
+        """Retourne le SIREN ou le numéro de TVA selon le contexte."""
         dom_tom_group = self.env.ref('l10n_fr.dom-tom')
         is_dom_tom = company.account_fiscal_country_id.code in dom_tom_group.country_ids.mapped('code')
         if not company.vat or is_dom_tom:
             return ''
-        elif company.country_id.code == 'FR' and len(company.vat) >= 13 and siren.is_valid(company.vat[4:13]):
+        elif company.country_id.code == 'FR' and len(company.vat) >= 13:
             return company.vat[4:13]
         else:
             return company.vat
@@ -115,557 +69,112 @@ class XenonAccountFrFec(models.TransientModel):
         self.ensure_one()
         if not (self.env.is_admin() or self.env.user.has_group('account.group_account_user')):
             raise AccessDenied()
-        # We choose to implement the flat file instead of the XML
-        # file for 2 reasons :
-        # 1) the XSD file impose to have the label on the account.move
-        # but Odoo has the label on the account.move.line, so that's a
-        # problem !
-        # 2) CSV files are easier to read/use for a regular accountant.
-        # So it will be easier for the accountant to check the file before
-        # sending it to the fiscal administration
+
         today = fields.Date.today()
         if self.date_from > today or self.date_to > today:
-            raise UserError(_('You could not set the start date or the end date in the future.'))
+            raise UserError(_('Vous ne pouvez pas définir une date dans le futur.'))
         if self.date_from >= self.date_to:
-            raise UserError(_('The start date must be inferior to the end date.'))
+            raise UserError(_('La date de début doit être antérieure à la date de fin.'))
 
         company = self.env.company
-        company_legal_data = self._get_company_legal_data_cabinet(company)
+        currency_digits = 2
+        formatted_date_from = fields.Date.to_string(self.date_from).replace('-', '')
+        formatted_date_to = fields.Date.to_string(self.date_to).replace('-', '')
 
         header = [
-            u'JournalCode',    # 0
-            u'JournalLib',     # 1
-            u'EcritureNum',    # 2
-            u'EcritureDate',   # 3
-            u'CompteNum',      # 4
-            u'CompteLib',      # 5
-            u'CompAuxNum',     # 6  We use partner.id
-            u'CompAuxLib',     # 7
-            u'PieceRef',       # 8
-            u'PieceDate',      # 9
-            u'EcritureLib',    # 10
-            u'Debit',          # 11
-            u'Credit',         # 12
-            u'EcritureLet',    # 13
-            u'DateLet',        # 14
-            u'ValidDate',      # 15
-            u'Montantdevise',  # 16
-            u'Idevise',        # 17
-            ]
-
+            'JournalCode',   # 0
+            'EcritureDate',  # 1
+            'CompteNum',     # 2
+            'EcritureLib',   # 3
+            'Debit',         # 4
+            'Credit',        # 5
+            'PieceRef',      # 6
+            'EcritureLet',   # 7
+        ]
         rows_to_write = [header]
-        # INITIAL BALANCE
-        unaffected_earnings_xml_ref = self.env.ref('account.data_unaffected_earnings')
-        unaffected_earnings_line = True  # used to make sure that we add the unaffected earning initial balance only once
+
+        # SOLDES INITIAUX - résultat exercice précédent
+        unaffected_earnings_xml_ref = self.env.ref('account.data_unaffected_earnings', raise_if_not_found=False)
+        unaffected_earnings_line = True
+        unaffected_earnings_results = []
         if unaffected_earnings_xml_ref:
-            #compute the benefit/loss of last year to add in the initial balance of the current year earnings account
             unaffected_earnings_results = self._do_query_unaffected_earnings_cabinet()
             unaffected_earnings_line = False
 
+        # SOLDES INITIAUX - comptes hors tiers
         sql_query = '''
         SELECT
             'OUV' AS JournalCode,
-            'Balance initiale' AS JournalLib,
-            'OUVERTURE/' || %s AS EcritureNum,
             %s AS EcritureDate,
             MIN(aa.code) AS CompteNum,
-            replace(replace(MIN(aa.name), '|', '/'), '\t', '') AS CompteLib,
-            '' AS CompAuxNum,
-            '' AS CompAuxLib,
-            '-' AS PieceRef,
-            %s AS PieceDate,
-            '/' AS EcritureLib,
+            replace(replace(MIN(aa.name), '|', ''), E'\\t', '') AS EcritureLib,
             replace(CASE WHEN sum(aml.balance) <= 0 THEN '0,00' ELSE to_char(SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Debit,
             replace(CASE WHEN sum(aml.balance) >= 0 THEN '0,00' ELSE to_char(-SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Credit,
+            '-' AS PieceRef,
             '' AS EcritureLet,
-            '' AS DateLet,
-            %s AS ValidDate,
-            '' AS Montantdevise,
-            '' AS Idevise,
             MIN(aa.id) AS CompteID
         FROM
             account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
+            LEFT JOIN account_move am ON am.id = aml.move_id
             JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
         WHERE
             am.date < %s
             AND am.company_id = %s
-            AND aat.include_initial_balance = 't'
+            AND aa.account_type IN (
+                'asset_cash', 'liability_credit_card',
+                'asset_current', 'liability_current',
+                'asset_non_current', 'liability_non_current',
+                'equity', 'equity_unaffected'
+            )
             AND (aml.debit != 0 OR aml.credit != 0)
         '''
-
-        # For official report: only use posted entries
         if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
-
+            sql_query += " AND am.state = 'posted'"
         sql_query += '''
-        GROUP BY aml.account_id, aat.type
+        GROUP BY aml.account_id, aa.account_type
         HAVING round(sum(aml.balance), %s) != 0
-        AND aat.type not in ('receivable', 'payable')
+        AND aa.account_type NOT IN ('asset_receivable', 'liability_payable')
         '''
-        formatted_date_from = fields.Date.to_string(self.date_from).replace('-', '')
-        date_from = self.date_from
-        formatted_date_year = date_from.year
-        currency_digits = 2
+        self._cr.execute(sql_query, (formatted_date_from, self.date_from, company.id, currency_digits))
 
-        self._cr.execute(
-            sql_query, (formatted_date_year, formatted_date_from, formatted_date_from, formatted_date_from, self.date_from, company.id, currency_digits))
-
+        unaffected_earnings_account_type = 'equity_unaffected'
         for row in self._cr.fetchall():
             listrow = list(row)
             account_id = listrow.pop()
             if not unaffected_earnings_line:
                 account = self.env['account.account'].browse(account_id)
-                if account.user_type_id.id == self.env.ref('account.data_unaffected_earnings').id:
-                    #add the benefit/loss of previous fiscal year to the first unaffected earnings account found.
-                    unaffected_earnings_line = True
-                    current_amount = float(listrow[11].replace(',', '.')) - float(listrow[12].replace(',', '.'))
-                    unaffected_earnings_amount = float(unaffected_earnings_results[11].replace(',', '.')) - float(unaffected_earnings_results[12].replace(',', '.'))
-                    listrow_amount = current_amount + unaffected_earnings_amount
-                    if float_is_zero(listrow_amount, precision_digits=currency_digits):
-                        continue
-                    if listrow_amount > 0:
-                        listrow[11] = str(listrow_amount).replace('.', ',')
-                        listrow[12] = '0,00'
-                    else:
-                        listrow[11] = '0,00'
-                        listrow[12] = str(-listrow_amount).replace('.', ',')
-            rows_to_write.append(listrow)
-
-        #if the unaffected earnings account wasn't in the selection yet: add it manually
-        if (not unaffected_earnings_line
-            and unaffected_earnings_results
-            and (unaffected_earnings_results[11] != '0,00'
-                 or unaffected_earnings_results[12] != '0,00')):
-            #search an unaffected earnings account
-            unaffected_earnings_account = self.env['account.account'].search([('user_type_id', '=', self.env.ref('account.data_unaffected_earnings').id),
-                                                                              ('company_id', '=', company.id)], limit=1)
-            if unaffected_earnings_account:
-                unaffected_earnings_results[4] = unaffected_earnings_account.code
-                unaffected_earnings_results[5] = unaffected_earnings_account.name
-            rows_to_write.append(unaffected_earnings_results)
-
-        # INITIAL BALANCE - receivable/payable
-        sql_query = '''
-        SELECT
-            'OUV' AS JournalCode,
-            'Balance initiale' AS JournalLib,
-            'OUVERTURE/' || %s AS EcritureNum,
-            %s AS EcritureDate,
-            MIN(aa.code) AS CompteNum,
-            CASE WHEN aat.type IN ('receivable', 'payable') and aml.partner_id is not null
-            THEN COALESCE(replace(rp.name, '|', '/'), '')
-            ELSE replace(MIN(aa.name), '|', '/') 
-            END AS CompteLib,
-            CASE WHEN MIN(aat.type) IN ('receivable', 'payable')
-            THEN
-                CASE WHEN rp.ref IS null OR rp.ref = ''
-                THEN rp.id::text
-                ELSE replace(rp.ref, '|', '/')
-                END
-            ELSE ''
-            END
-            AS CompAuxNum,
-            CASE WHEN aat.type IN ('receivable', 'payable')
-            THEN COALESCE(replace(rp.name, '|', '/'), '')
-            ELSE ''
-            END AS CompAuxLib,
-            CASE WHEN aat.type IN ('receivable', 'payable')
-            THEN COALESCE(replace(rp.name, '|', '/'), '')
-            ELSE '-'
-            END AS PieceRef,
-            %s AS PieceDate,
-            '/' AS EcritureLib,
-            replace(CASE WHEN sum(aml.balance) <= 0 THEN '0,00' ELSE to_char(SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN sum(aml.balance) >= 0 THEN '0,00' ELSE to_char(-SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Credit,
-            '' AS EcritureLet,
-            '' AS DateLet,
-            %s AS ValidDate,
-            '' AS Montantdevise,
-            '' AS Idevise,
-            MIN(aa.id) AS CompteID
-        FROM
-            account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            LEFT JOIN res_partner rp ON rp.id=aml.partner_id
-            JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-        WHERE
-            am.date < %s
-            AND am.company_id = %s
-            AND aat.include_initial_balance = 't'
-            AND (aml.debit != 0 OR aml.credit != 0)
-        '''
-
-        # For official report: only use posted entries
-        if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
-
-        sql_query += '''
-        GROUP BY aml.account_id, aat.type, rp.ref, rp.id, aml.partner_id
-        HAVING round(sum(aml.balance), %s) != 0
-        AND aat.type in ('receivable', 'payable')
-        '''
-        self._cr.execute(
-            sql_query, (formatted_date_year, formatted_date_from, formatted_date_from, formatted_date_from, self.date_from, company.id, currency_digits))
-
-        for row in self._cr.fetchall():
-            listrow = list(row)
-            account_id = listrow.pop()
-            rows_to_write.append(listrow)
-
-        # LINES
-        query_limit = int(self.env['ir.config_parameter'].sudo().get_param('l10n_fr_fec.batch_size', 500000)) # To prevent memory errors when fetching the results
-        sql_query = f'''
-        SELECT
-            REGEXP_REPLACE(replace(aj.code, '|', '/'), '[\\t\\r\\n]', ' ', 'g') AS JournalCode,
-            REGEXP_REPLACE(replace(COALESCE(aj__name.value, aj.name), '|', '/'), '[\\t\\r\\n]', ' ', 'g') AS JournalLib,
-            REGEXP_REPLACE(replace(am.name, '|', '/'), '[\\t\\r\\n]', ' ', 'g') AS EcritureNum,
-            TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
-            aa.code AS CompteNum,
-            CASE WHEN aat.type IN ('receivable', 'payable') and aml.partner_id is not null
-            THEN COALESCE(REGEXP_REPLACE(replace(rp.name, '|', '/'), '[\\t\\r\\n]', ' ', 'g'), '')
-            ELSE REGEXP_REPLACE(replace(aa.name, '|', '/'), '[\\t\\r\\n]', ' ', 'g') 
-            END AS CompteLib,
-            CASE WHEN aat.type IN ('receivable', 'payable')
-            THEN
-                CASE WHEN rp.ref IS null OR rp.ref = ''
-                THEN rp.id::text
-                ELSE replace(rp.ref, '|', '/')
-                END
-            ELSE ''
-            END
-            AS CompAuxNum,
-            CASE WHEN aat.type IN ('receivable', 'payable')
-            THEN COALESCE(REGEXP_REPLACE(replace(rp.name, '|', '/'), '[\\t\\r\\n]', ' ', 'g'), '')
-            ELSE ''
-            END AS CompAuxLib,
-            CASE WHEN am.ref IS null OR am.ref = ''
-            THEN '-'
-            ELSE 
-                REGEXP_REPLACE(replace(am.ref, '|', '/'), '[\\t\\r\\n]', ' ', 'g') || ' - ' || am.invoice_partner_display_name
-            END
-            AS PieceRef,
-            TO_CHAR(COALESCE(am.invoice_date, am.date), 'YYYYMMDD') AS PieceDate,
-            CASE WHEN aml.name IS NULL OR aml.name = '' THEN '/'
-                WHEN aml.name SIMILAR TO '[\\t|\\s|\\n]*' THEN '/'
-                ELSE 
-                    CASE WHEN substring(aa.code,1,3)='445'
-                    THEN am.invoice_partner_display_name
-                    ELSE replace(REGEXP_REPLACE(replace(aml.name, '|', '/'), '[\\t\\n\\r]', ' ', 'g'),';','') 
-                    END
-                END AS EcritureLib,
-            replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
-            CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet,
-            CASE WHEN aml.full_reconcile_id IS NULL THEN '' ELSE TO_CHAR(rec.create_date, 'YYYYMMDD') END AS DateLet,
-            TO_CHAR(am.date, 'YYYYMMDD') AS ValidDate,
-            CASE
-                WHEN aml.amount_currency IS NULL OR aml.amount_currency = 0 THEN ''
-                ELSE replace(to_char(aml.amount_currency, '000000000000000D99'), '.', ',')
-            END AS Montantdevise,
-            CASE WHEN aml.currency_id IS NULL THEN '' ELSE rc.name END AS Idevise
-        FROM
-            account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            LEFT JOIN res_partner rp ON rp.id=aml.partner_id
-            JOIN account_journal aj ON aj.id = am.journal_id
-            LEFT JOIN ir_translation aj__name ON aj__name.res_id = aj.id
-                                             AND aj__name.type = 'model'
-                                             AND aj__name.name = 'account.journal,name'
-                                             AND aj__name.lang = %s
-                                             AND aj__name.value != ''
-            JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-            LEFT JOIN res_currency rc ON rc.id = aml.currency_id
-            LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
-        WHERE
-            am.date >= %s
-            AND am.date <= %s
-            AND am.company_id = %s
-            AND (aml.debit != 0 OR aml.credit != 0)
-            {"AND am.state = 'posted'" if self.export_type == 'official' else ""}
-        ORDER BY
-            am.date,
-            am.name,
-            aml.id
-        LIMIT %s
-        OFFSET %s
-        '''
-
-        lang = self.env.user.lang or get_lang(self.env).code
-
-        with io.BytesIO() as fecfile:
-            csv_writer = pycompat.csv_writer(fecfile, delimiter='|', lineterminator='')
-
-            # Write header and initial balances
-            for initial_row in rows_to_write:
-                initial_row = list(initial_row)
-                # We don't skip \n at then end of the file if there are only initial balances, for simplicity. An empty period export shouldn't happen IRL.
-                initial_row[-1] += u'\r\n'
-                csv_writer.writerow(initial_row)
-
-            # Write current period's data
-            query_offset = 0
-            has_more_results = True
-            while has_more_results:
-                self._cr.execute(
-                    sql_query,
-                    (lang, self.date_from, self.date_to, company.id, query_limit + 1, query_offset)
-                )
-                query_offset += query_limit
-                has_more_results = self._cr.rowcount > query_limit # we load one more result than the limit to check if there is more
-                query_results = self._cr.fetchall()
-                for i, row in enumerate(query_results[:query_limit]):
-                    if i < len(query_results) - 1:
-                        # The file is not allowed to end with an empty line, so we can't use lineterminator on the writer
-                        row = list(row)
-                        row[-1] += u'\r\n'
-                    csv_writer.writerow(row)
-
-            base64_result = base64.encodebytes(fecfile.getvalue())
-
-        end_date = fields.Date.to_string(self.date_to).replace('-', '')
-        suffix = ''
-        if self.export_type == "nonofficial":
-            suffix = '-NONOFFICIAL'
-
-        self.write({
-            'fec_data': base64_result,
-            # Filename = <siren>FECYYYYMMDD where YYYMMDD is the closing date
-            'filename': '%sFEC%s%s.csv' % (company_legal_data, end_date, suffix),
-            })
-
-        # Set fiscal year lock date to the end date (not in test)
-        fiscalyear_lock_date = self.env.company.fiscalyear_lock_date
-        if not self.test_file and (not fiscalyear_lock_date or fiscalyear_lock_date < self.date_to):
-            self.env.company.write({'fiscalyear_lock_date': self.date_to})
-        return {
-            'name': 'FEC',
-            'type': 'ir.actions.act_url',
-            'url': "web/content/?model=account.fr.fec&id=" + str(self.id) + "&filename_field=filename&field=fec_data&download=true&filename=" + self.filename,
-            'target': 'self',
-        }
-
-    def _csv_write_rows_cabinet(self, rows, lineterminator=u'\r\n'): #DEPRECATED; will disappear in master
-        """
-        Write FEC rows into a file
-        It seems that Bercy's bureaucracy is not too happy about the
-        empty new line at the End Of File.
-
-        @param {list(list)} rows: the list of rows. Each row is a list of strings
-        @param {unicode string} [optional] lineterminator: effective line terminator
-            Has nothing to do with the csv writer parameter
-            The last line written won't be terminated with it
-
-        @return the value of the file
-        """
-        fecfile = io.BytesIO()
-        writer = pycompat.csv_writer(fecfile, delimiter='|', lineterminator='')
-
-        rows_length = len(rows)
-        for i, row in enumerate(rows):
-            if not i == rows_length - 1:
-                row[-1] += lineterminator
-            writer.writerow(row)
-
-        fecvalue = fecfile.getvalue()
-        fecfile.close()
-        return fecvalue
-    
-    
-    
-    
-    
-    
-    
-    ##############################################################################################
-    
-    def do_query_unaffected_earnings_cabinet(self):
-        ''' Compute the sum of ending balances for all accounts that are of a type that does not bring forward the balance in new fiscal years.
-            This is needed because we have to display only one line for the initial balance of all expense/revenue accounts in the FEC.
-        '''
-
-        sql_query = '''
-        SELECT
-            'OUV' AS JournalCode,
-            %s AS EcritureDate,
-            '120/129' AS CompteNum,
-            'RESULTAT EXERCICE' AS EcritureLib,
-            replace(CASE WHEN COALESCE(sum(aml.balance), 0) <= 0 THEN '0,00' ELSE to_char(SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN COALESCE(sum(aml.balance), 0) >= 0 THEN '0,00' ELSE to_char(-SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Credit,
-            '-' AS PieceRef,
-            '' AS EcritureLet
-        FROM
-            account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-        WHERE
-            am.date < %s
-            AND am.company_id = %s
-            AND aat.include_initial_balance IS NOT TRUE
-            AND (aml.debit != 0 OR aml.credit != 0)
-        '''
-        # For official report: only use posted entries
-        if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
-        company = self.env.company
-        formatted_date_from = fields.Date.to_string(self.date_from).replace('-', '')
-        date_from = self.date_from
-        formatted_date_year = date_from.year
-        self._cr.execute(
-            sql_query, (formatted_date_from, self.date_from, company.id))
-        listrow = []
-        row = self._cr.fetchone()
-        listrow = list(row)
-        return listrow
-    
-    
-    def _get_company_legal_data_cabinet(self, company):
-        """
-        Dom-Tom are excluded from the EU's fiscal territory
-        Those regions do not have SIREN
-        sources:
-            https://www.service-public.fr/professionnels-entreprises/vosdroits/F23570
-            http://www.douane.gouv.fr/articles/a11024-tva-dans-les-dom
-        """
-        dom_tom_group = self.env.ref('l10n_fr.dom-tom')
-        is_dom_tom = company.country_id.code in dom_tom_group.country_ids.mapped('code')
-        if not is_dom_tom and not company.vat:
-            raise Warning(
-                _("Missing VAT number for company %s") % company.name)
-        if not is_dom_tom and company.vat[0:2] != 'FR':
-            raise Warning(
-                _("FEC is for French companies only !"))
-
-        return {
-            'siren': company.vat[4:13] if not is_dom_tom else '',
-        }
-    
-    
-    
-    def generate_export_cabinet_xenon(self):
-        self.ensure_one()
-        # We choose to implement the flat file instead of the XML
-        # file for 2 reasons :
-        # 1) the XSD file impose to have the label on the account.move
-        # but Odoo has the label on the account.move.line, so that's a
-        # problem !
-        # 2) CSV files are easier to read/use for a regular accountant.
-        # So it will be easier for the accountant to check the file before
-        # sending it to the fiscal administration
-        company = self.env.company
-        company_legal_data = self._get_company_legal_data_cabinet(company)
-
-        header = [
-            u'JournalCode',    # 0
-            u'EcritureDate',   # 1
-            u'CompteNum',      # 2
-            u'EcritureLib',    # 3
-            u'Debit',          # 4
-            u'Credit',         # 5
-            u'PieceRef',       # 6
-            u'EcritureLet',    # 7
-            ]
-
-        rows_to_write = [header]
-        # INITIAL BALANCE
-        unaffected_earnings_xml_ref = self.env.ref('account.data_unaffected_earnings')
-        unaffected_earnings_line = True  # used to make sure that we add the unaffected earning initial balance only once
-        if unaffected_earnings_xml_ref:
-            #compute the benefit/loss of last year to add in the initial balance of the current year earnings account
-            unaffected_earnings_results = self.do_query_unaffected_earnings_cabinet()
-            unaffected_earnings_line = False
-
-        sql_query = '''
-        SELECT
-            'OUV' AS JournalCode,
-            %s AS EcritureDate,
-            MIN(aa.code) AS CompteNum,
-            replace(replace(MIN(aa.name), '|', ''), '\t', '') AS EcritureLib,
-            replace(CASE WHEN sum(aml.balance) <= 0 THEN '0,00' ELSE to_char(SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN sum(aml.balance) >= 0 THEN '0,00' ELSE to_char(-SUM(aml.balance), '000000000000000D99') END, '.', ',') AS Credit,            
-            '-' AS PieceRef,
-            '' AS EcritureLet
-        FROM
-            account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-        WHERE
-            am.date < %s
-            AND am.company_id = %s
-            AND aat.include_initial_balance = 't'
-            AND (aml.debit != 0 OR aml.credit != 0)
-        '''
-
-        # For official report: only use posted entries
-        if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
-
-        sql_query += '''
-        GROUP BY aml.account_id, aat.type
-        HAVING round(sum(aml.balance), %s) != 0
-        AND aat.type not in ('receivable', 'payable')
-        '''
-        formatted_date_from = fields.Date.to_string(self.date_from).replace('-', '')
-        date_from = self.date_from
-        formatted_date_year = date_from.year
-        currency_digits = 2
-
-        self._cr.execute(
-            sql_query, (formatted_date_from, self.date_from, company.id, currency_digits))
-
-        for row in self._cr.fetchall():
-            listrow = list(row)
-            account_id = listrow.pop()
-            if not unaffected_earnings_line:
-                account = self.env['account.account'].browse(account_id)
-                if account.user_type_id.id == self.env.ref('account.data_unaffected_earnings').id:
-                    #add the benefit/loss of previous fiscal year to the first unaffected earnings account found.
+                if account.account_type == unaffected_earnings_account_type:
                     unaffected_earnings_line = True
                     current_amount = float(listrow[4].replace(',', '.')) - float(listrow[5].replace(',', '.'))
-                    unaffected_earnings_amount = float(unaffected_earnings_results[4].replace(',', '.')) - float(unaffected_earnings_results[5].replace(',', '.'))
-                    listrow_amount = current_amount + unaffected_earnings_amount
-                    if float_is_zero(listrow_amount, precision_digits=currency_digits):
+                    unaffected_amount = float(unaffected_earnings_results[4].replace(',', '.')) - float(unaffected_earnings_results[5].replace(',', '.'))
+                    total = current_amount + unaffected_amount
+                    if float_is_zero(total, precision_digits=currency_digits):
                         continue
-                    if listrow_amount > 0:
-                        listrow[4] = str(listrow_amount).replace('.', ',')
+                    if total > 0:
+                        listrow[4] = str(total).replace('.', ',')
                         listrow[5] = '0,00'
                     else:
                         listrow[4] = '0,00'
-                        listrow[5] = str(-listrow_amount).replace('.', ',')
+                        listrow[5] = str(-total).replace('.', ',')
             rows_to_write.append(listrow)
 
-        #if the unaffected earnings account wasn't in the selection yet: add it manually
+        # Ajout manuel si le compte de résultat n'était pas dans la sélection
         if (not unaffected_earnings_line
-            and unaffected_earnings_results
-            and (unaffected_earnings_results[4] != '0,00'
-                 or unaffected_earnings_results[5] != '0,00')):
-            #search an unaffected earnings account
-            unaffected_earnings_account = self.env['account.account'].search([('user_type_id', '=', self.env.ref('account.data_unaffected_earnings').id)], limit=1)
-            if unaffected_earnings_account:
-                unaffected_earnings_results[2] = unaffected_earnings_account.code
-                #unaffected_earnings_results[5] = unaffected_earnings_account.name
+                and unaffected_earnings_results
+                and (unaffected_earnings_results[4] != '0,00' or unaffected_earnings_results[5] != '0,00')):
+            unaffected_account = self.env['account.account'].search(
+                [('account_type', '=', unaffected_earnings_account_type), ('company_id', '=', company.id)], limit=1)
+            if unaffected_account:
+                unaffected_earnings_results[2] = unaffected_account.code
             rows_to_write.append(unaffected_earnings_results)
 
-        # INITIAL BALANCE - receivable/payable   
+        # SOLDES INITIAUX - comptes tiers (receivable/payable)
         sql_query = '''
         SELECT
             'OUV' AS JournalCode,
             %s AS EcritureDate,
             CASE WHEN rp.id IS NULL THEN MIN(aa.code) ELSE MIN(aa.code) || '_' || rp.id END AS CompteNum,
-            CASE WHEN aat.type IN ('receivable', 'payable')
+            CASE WHEN aa.account_type IN ('asset_receivable', 'liability_payable')
             THEN COALESCE(replace(rp.name, '|', '-'), MIN(aa.name))
             ELSE ''
             END AS EcritureLib,
@@ -675,164 +184,135 @@ class XenonAccountFrFec(models.TransientModel):
             '' AS EcritureLet
         FROM
             account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            LEFT JOIN res_partner rp ON rp.id=aml.partner_id
+            LEFT JOIN account_move am ON am.id = aml.move_id
+            LEFT JOIN res_partner rp ON rp.id = aml.partner_id
             JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
         WHERE
             am.date < %s
             AND am.company_id = %s
-            AND aat.include_initial_balance = 't'
+            AND aa.account_type IN ('asset_receivable', 'liability_payable')
             AND (aml.debit != 0 OR aml.credit != 0)
         '''
-
-        # For official report: only use posted entries
         if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
-
+            sql_query += " AND am.state = 'posted'"
         sql_query += '''
-        GROUP BY aml.account_id, aat.type, rp.ref, rp.id
+        GROUP BY aml.account_id, aa.account_type, rp.ref, rp.id
         HAVING round(sum(aml.balance), %s) != 0
-        AND aat.type in ('receivable', 'payable')
         '''
-        self._cr.execute(
-            sql_query, (formatted_date_from, self.date_from, company.id, currency_digits))
-
-        for row in self._cr.fetchall():
-            listrow = list(row)
-            account_id = listrow.pop()
-            rows_to_write.append(listrow)
-
-        # Libellé écriture ==> 1- libellé partenaire 2- libellé écriture 3- libellé compte
-        sql_query = '''
-        SELECT
-            replace(replace(replace(replace(aj.code, '|', '-'), '\t', ''),'FACTU','AC'),'FAC','VE') AS JournalCode,
-            TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
-            CASE WHEN aat.type in ('receivable', 'payable') THEN 
-                (CASE WHEN rp.id IS NULL THEN aa.code ELSE aa.code || '_' || rp.id end) else aa.code end AS CompteNum,
-            coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
-            replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
-            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 20) AS PieceRef,
-            CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
-        FROM
-            account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            LEFT JOIN res_partner rp ON rp.id=aml.partner_id
-            JOIN account_journal aj ON aj.id = am.journal_id
-            JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-            LEFT JOIN res_currency rc ON rc.id = aml.currency_id
-            LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
-        WHERE
-            am.date >= %s
-            AND am.date <= %s
-            AND am.company_id = %s
-            AND (aml.debit != 0 OR aml.credit != 0)
-            and aj.code!='CABA'
-        '''
-
-        # For official report: only use posted entries
-        if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
-            
-        sql_query += '''
-        UNION ALL
-        SELECT
-            replace(replace(replace(replace(aj.code, '|', '-'), '\t', ''),'FACTU','AC'),'FAC','VE') AS JournalCode,
-            TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
-            CASE WHEN aat.type in ('receivable', 'payable') THEN 
-                (CASE WHEN rp.id IS NULL THEN aa.code ELSE aa.code || '_' || rp.id end) else aa.code end AS CompteNum,
-            coalesce(replace(replace(rp.name, '|', '-'), '\t', ''), replace(replace(replace(replace(replace(aml.name, '|', '-'), '\t', ''), '\n', ''), '\r', ''),';',''),aa.name) AS EcritureLib, 
-            replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
-            substring(replace(replace(am.name, '|', '-'), '\t', ''), position('/' in am.name)+1, 20) AS PieceRef,
-            CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
-        FROM
-            account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            LEFT JOIN res_partner rp ON rp.id=aml.partner_id
-            JOIN account_journal aj ON aj.id = am.journal_id
-            JOIN account_account aa ON aa.id = aml.account_id and substring(aa.code,1,3)='445'
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-            LEFT JOIN res_currency rc ON rc.id = aml.currency_id
-            LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
-        WHERE
-            am.date >= %s
-            AND am.date <= %s
-            AND am.company_id = %s
-            AND (aml.debit != 0 OR aml.credit != 0)
-            AND am.state = 'posted'
-			and aj.code='CABA'
-        '''
-        
-         # For official report: only use posted entries
-        if self.export_type == "official":
-            sql_query += '''
-            AND am.state = 'posted'
-            '''
-
-        sql_query += '''
-        ORDER BY
-            EcritureDate,
-			JournalCode,
-            PieceRef
-        '''
-        self._cr.execute(
-            sql_query, (self.date_from, self.date_to, company.id,self.date_from, self.date_to, company.id))
-
+        self._cr.execute(sql_query, (formatted_date_from, self.date_from, company.id, currency_digits))
         for row in self._cr.fetchall():
             rows_to_write.append(list(row))
 
-        fecvalue = self._csv_write_rows(rows_to_write)
-        end_date = fields.Date.to_string(self.date_to).replace('-', '')
-        start_date = fields.Date.to_string(self.date_from).replace('-', '')
-        suffix = ''
-        if self.export_type == "nonofficial":
-            suffix = '-Brouillon compris'
+        # ÉCRITURES DE LA PÉRIODE
+        sql_query = '''
+        SELECT
+            replace(replace(replace(replace(aj.code, '|', '-'), E'\\t', ''), 'FACTU', 'AC'), 'FAC', 'VE') AS JournalCode,
+            TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
+            CASE WHEN aa.account_type IN ('asset_receivable', 'liability_payable') THEN
+                CASE WHEN rp.id IS NULL THEN aa.code ELSE aa.code || '_' || rp.id END
+            ELSE aa.code END AS CompteNum,
+            COALESCE(
+                replace(replace(rp.name, '|', '-'), E'\\t', ''),
+                replace(replace(replace(replace(replace(aml.name, '|', '-'), E'\\t', ''), E'\\n', ''), E'\\r', ''), ';', ''),
+                aa.name
+            ) AS EcritureLib,
+            replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
+            replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
+            substring(replace(replace(am.name, '|', '-'), E'\\t', ''), position('/' in am.name) + 1, 20) AS PieceRef,
+            CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
+        FROM
+            account_move_line aml
+            LEFT JOIN account_move am ON am.id = aml.move_id
+            LEFT JOIN res_partner rp ON rp.id = aml.partner_id
+            JOIN account_journal aj ON aj.id = am.journal_id
+            JOIN account_account aa ON aa.id = aml.account_id
+            LEFT JOIN res_currency rc ON rc.id = aml.currency_id
+            LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
+        WHERE
+            am.date >= %s
+            AND am.date <= %s
+            AND am.company_id = %s
+            AND (aml.debit != 0 OR aml.credit != 0)
+            AND aj.code != 'CABA'
+        '''
+        if self.export_type == "official":
+            sql_query += " AND am.state = 'posted'"
+
+        sql_query += '''
+        UNION ALL
+        SELECT
+            replace(replace(replace(replace(aj.code, '|', '-'), E'\\t', ''), 'FACTU', 'AC'), 'FAC', 'VE') AS JournalCode,
+            TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
+            CASE WHEN aa.account_type IN ('asset_receivable', 'liability_payable') THEN
+                CASE WHEN rp.id IS NULL THEN aa.code ELSE aa.code || '_' || rp.id END
+            ELSE aa.code END AS CompteNum,
+            COALESCE(
+                replace(replace(rp.name, '|', '-'), E'\\t', ''),
+                replace(replace(replace(replace(replace(aml.name, '|', '-'), E'\\t', ''), E'\\n', ''), E'\\r', ''), ';', ''),
+                aa.name
+            ) AS EcritureLib,
+            replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
+            replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
+            substring(replace(replace(am.name, '|', '-'), E'\\t', ''), position('/' in am.name) + 1, 20) AS PieceRef,
+            CASE WHEN rec.name IS NULL THEN '' ELSE rec.name END AS EcritureLet
+        FROM
+            account_move_line aml
+            LEFT JOIN account_move am ON am.id = aml.move_id
+            LEFT JOIN res_partner rp ON rp.id = aml.partner_id
+            JOIN account_journal aj ON aj.id = am.journal_id
+            JOIN account_account aa ON aa.id = aml.account_id AND substring(aa.code, 1, 3) = '445'
+            LEFT JOIN res_currency rc ON rc.id = aml.currency_id
+            LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
+        WHERE
+            am.date >= %s
+            AND am.date <= %s
+            AND am.company_id = %s
+            AND (aml.debit != 0 OR aml.credit != 0)
+            AND am.state = 'posted'
+            AND aj.code = 'CABA'
+        ORDER BY
+            EcritureDate,
+            JournalCode,
+            PieceRef
+        '''
+        self._cr.execute(sql_query, (
+            self.date_from, self.date_to, company.id,
+            self.date_from, self.date_to, company.id,
+        ))
+        for row in self._cr.fetchall():
+            rows_to_write.append(list(row))
+
+        fecvalue = self._csv_write_rows_cabinet(rows_to_write)
+        suffix = '-Brouillon compris' if self.export_type == "nonofficial" else ''
+        filename = 'ExportCabinet_du%s_au_%s%s.csv' % (formatted_date_from, formatted_date_to, suffix)
 
         self.write({
-            'fec_data': base64.encodestring(fecvalue),
-            # Filename = <siren>FECYYYYMMDD where YYYMMDD is the closing date
-            'filename': 'ExportCabinet_du%s_au_%s%s.csv' % (start_date, end_date, suffix),
-            })
+            'fec_data': base64.encodebytes(fecvalue),
+            'filename': filename,
+        })
 
-        action = {
-            'name': 'FEC',
+        return {
+            'name': 'Export Cabinet',
             'type': 'ir.actions.act_url',
-            'url': "web/content/?model=account.fr.fec&id=" + str(self.id) + "&filename_field=filename&field=fec_data&download=true&filename=" + self.filename,
+            'url': "web/content/?model=l10n_fr.fec.export.wizard&id=%s&filename_field=filename&field=fec_data&download=true&filename=%s" % (self.id, filename),
             'target': 'self',
-            }
-        return action
+        }
 
-    def _csv_write_rows(self, rows, lineterminator=u'\r\n'):
-        """
-        Write FEC rows into a file
-        It seems that Bercy's bureaucracy is not too happy about the
-        empty new line at the End Of File.
-
-        @param {list(list)} rows: the list of rows. Each row is a list of strings
-        @param {unicode string} [optional] lineterminator: effective line terminator
-            Has nothing to do with the csv writer parameter
-            The last line written won't be terminated with it
-
-        @return the value of the file
-        """
+    def _csv_write_rows_cabinet(self, rows, lineterminator='\r\n'):
+        """Écrit les lignes FEC dans un fichier CSV avec séparateur pipe."""
         fecfile = io.BytesIO()
-        writer = pycompat.csv_writer(fecfile, delimiter='|', lineterminator='')
+        # csv natif en v18 (pycompat supprimé)
+        text_wrapper = io.TextIOWrapper(fecfile, encoding='utf-8', newline='')
+        writer = csv.writer(text_wrapper, delimiter='|', lineterminator='')
 
         rows_length = len(rows)
         for i, row in enumerate(rows):
-            if not i == rows_length - 1:
+            row = [str(col) if col is not None else '' for col in row]
+            if i < rows_length - 1:
                 row[-1] += lineterminator
             writer.writerow(row)
 
+        text_wrapper.flush()
         fecvalue = fecfile.getvalue()
         fecfile.close()
         return fecvalue
-
-
