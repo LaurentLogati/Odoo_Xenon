@@ -35,7 +35,7 @@
       
     <menuitem id="progdigital_menu"
         name="ProgdigitalXenon"
-        parent="__export__.ir_ui_menu_456_dbdec0a3"
+        parent="account.menu_finance"
         action="progdigital_action"
         sequence="30"/>
       
