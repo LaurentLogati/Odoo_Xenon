@@ -4,34 +4,30 @@ from odoo import api, models
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
-    @api.onchange('start_date')
-    def _onchange_start_date_oca(self):
-        """Synchronise start_date (OCA) -> deferred_start_date (standard v18)"""
-        if self.start_date and self.start_date != self.deferred_start_date:
-            self.deferred_start_date = self.start_date
-        elif not self.start_date:
-            self.deferred_start_date = False
+    def write(self, vals):
+        # Synchronise OCA -> standard v18
+        if 'start_date' in vals and 'deferred_start_date' not in vals:
+            vals['deferred_start_date'] = vals['start_date']
+        if 'end_date' in vals and 'deferred_end_date' not in vals:
+            vals['deferred_end_date'] = vals['end_date']
+        # Synchronise standard v18 -> OCA
+        if 'deferred_start_date' in vals and 'start_date' not in vals:
+            vals['start_date'] = vals['deferred_start_date']
+        if 'deferred_end_date' in vals and 'end_date' not in vals:
+            vals['end_date'] = vals['deferred_end_date']
+        return super().write(vals)
 
-    @api.onchange('end_date')
-    def _onchange_end_date_oca(self):
-        """Synchronise end_date (OCA) -> deferred_end_date (standard v18)"""
-        if self.end_date and self.end_date != self.deferred_end_date:
-            self.deferred_end_date = self.end_date
-        elif not self.end_date:
-            self.deferred_end_date = False
-
-    @api.onchange('deferred_start_date')
-    def _onchange_deferred_start_date(self):
-        """Synchronise deferred_start_date (standard v18) -> start_date (OCA)"""
-        if self.deferred_start_date and self.deferred_start_date != self.start_date:
-            self.start_date = self.deferred_start_date
-        elif not self.deferred_start_date:
-            self.start_date = False
-
-    @api.onchange('deferred_end_date')
-    def _onchange_deferred_end_date(self):
-        """Synchronise deferred_end_date (standard v18) -> end_date (OCA)"""
-        if self.deferred_end_date and self.deferred_end_date != self.end_date:
-            self.end_date = self.deferred_end_date
-        elif not self.deferred_end_date:
-            self.end_date = False
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            # Synchronise OCA -> standard v18
+            if 'start_date' in vals and 'deferred_start_date' not in vals:
+                vals['deferred_start_date'] = vals['start_date']
+            if 'end_date' in vals and 'deferred_end_date' not in vals:
+                vals['deferred_end_date'] = vals['end_date']
+            # Synchronise standard v18 -> OCA
+            if 'deferred_start_date' in vals and 'start_date' not in vals:
+                vals['start_date'] = vals['deferred_start_date']
+            if 'deferred_end_date' in vals and 'end_date' not in vals:
+                vals['end_date'] = vals['deferred_end_date']
+        return super().create(vals_list)
