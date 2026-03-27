@@ -255,7 +255,7 @@ class L10nFrFecExportWizardXenon(models.TransientModel):
                 replace(CASE WHEN account_move_line.debit = 0 THEN '0,00' ELSE to_char(account_move_line.debit, '000000000000000D99') END, '.', ',') AS Debit,
                 replace(CASE WHEN account_move_line.credit = 0 THEN '0,00' ELSE to_char(account_move_line.credit, '000000000000000D99') END, '.', ',') AS Credit,
                 substring(replace(replace(%(move_alias)s.name, '|', '-'), E'\\t', ''), position('/' in %(move_alias)s.name) + 1, 20) AS PieceRef,
-                CASE WHEN %(rec_alias)s.name IS NULL THEN '' ELSE %(rec_alias)s.name END AS EcritureLet
+                CASE WHEN %(rec_alias)s.id IS NULL THEN ''::text ELSE %(rec_alias)s.id::text END AS EcritureLet
             """,
             journal_alias=journal_alias,
             move_alias=move_alias,
@@ -302,7 +302,7 @@ class L10nFrFecExportWizardXenon(models.TransientModel):
                 replace(CASE WHEN account_move_line.debit = 0 THEN '0,00' ELSE to_char(account_move_line.debit, '000000000000000D99') END, '.', ',') AS Debit,
                 replace(CASE WHEN account_move_line.credit = 0 THEN '0,00' ELSE to_char(account_move_line.credit, '000000000000000D99') END, '.', ',') AS Credit,
                 substring(replace(replace(%(move_alias)s.name, '|', '-'), E'\\t', ''), position('/' in %(move_alias)s.name) + 1, 20) AS PieceRef,
-                CASE WHEN %(rec_alias)s.name IS NULL THEN '' ELSE %(rec_alias)s.name END AS EcritureLet
+                CASE WHEN %(rec_alias)s.id IS NULL THEN ''::text ELSE %(rec_alias)s.id::text END AS EcritureLet
             """,
             journal_alias=journal_alias_c,
             move_alias=move_alias_c,
