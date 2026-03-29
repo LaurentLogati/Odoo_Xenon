@@ -272,50 +272,47 @@ class L10nFrFecExportWizardXenon(models.TransientModel):
 
         # ---------------------------------------------------------------
         # ÉCRITURES DE LA PÉRIODE - comptes 445 via journal CABA
+        # SQL pur pour éviter les conflits de joins avec _search
         # ---------------------------------------------------------------
-        query_caba = self.env['account.move.line']._search([
-            ('company_id', 'in', tuple(self.env.company._accessible_branches().ids)),
-            ('parent_state', '=', 'posted'),
-            ('date', '>=', self.date_from),
-            ('date', '<=', self.date_to),
-            ('journal_id.code', '=', 'CABA'),
-            ('account_id.code', 'like', '445%'),
-        ])
-        account_alias_c = query_caba.join('account_move_line', 'account_id', 'account_account', 'id', 'account_id')
-        aa_code_c = self.env['account.account']._field_to_sql(account_alias_c, 'code', query_caba)
-        aa_name_c = self.env['account.account']._field_to_sql(account_alias_c, 'name')
-        move_alias_c = SQL.identifier(query_caba.left_join('account_move_line', 'move_id', 'account_move', 'id', 'move_id'))
-        journal_alias_c = SQL.identifier(query_caba.left_join('account_move_line', 'journal_id', 'account_journal', 'id', 'journal_id'))
-        partner_alias_c = SQL.identifier(query_caba.left_join('account_move_line', 'partner_id', 'res_partner', 'id', 'partner_id'))
-        rec_alias_c = SQL.identifier(query_caba.left_join('account_move_line', 'full_reconcile_id', 'account_full_reconcile', 'id', 'full_reconcile_id'))
-
-        columns_caba = SQL(
+        branch_ids = tuple(self.env.company._accessible_branches().ids)
+        company_root_id = str(self.env.company.root_id.id)
+        self._cr.execute(SQL(
             """
-                replace(replace(replace(replace(%(journal_alias)s.code, '|', '-'), E'\\t', ''), 'FACTU', 'AC'), 'FAC', 'VE') AS JournalCode,
-                TO_CHAR(%(move_alias)s.date, 'YYYYMMDD') AS EcritureDate,
-                %(aa_code)s AS CompteNum,
+            SELECT
+                replace(replace(replace(replace(aj.code, '|', '-'), E'\t', ''), 'FACTU', 'AC'), 'FAC', 'VE') AS JournalCode,
+                TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
+                aa.code_store->>%(company_root_id)s AS CompteNum,
                 COALESCE(
-                    replace(replace(%(partner_alias)s.name, '|', '-'), E'\\t', ''),
-                    replace(replace(replace(replace(replace(account_move_line.name, '|', '-'), E'\\t', ''), E'\\n', ''), E'\\r', ''), ';', ''),
-                    %(aa_name)s
+                    replace(replace(rp.name, '|', '-'), E'\t', ''),
+                    replace(replace(replace(replace(replace(aml.name, '|', '-'), E'\t', ''), E'\n', ''), E'\r', ''), ';', ''),
+                    aa.name->>%(company_root_id)s
                 ) AS EcritureLib,
-                replace(CASE WHEN account_move_line.debit = 0 THEN '0,00' ELSE to_char(account_move_line.debit, '000000000000000D99') END, '.', ',') AS Debit,
-                replace(CASE WHEN account_move_line.credit = 0 THEN '0,00' ELSE to_char(account_move_line.credit, '000000000000000D99') END, '.', ',') AS Credit,
-                substring(replace(replace(%(move_alias)s.name, '|', '-'), E'\\t', ''), position('/' in %(move_alias)s.name) + 1, 20) AS PieceRef,
-                CASE WHEN %(rec_alias)s.id IS NULL THEN ''::text ELSE %(rec_alias)s.id::text END AS EcritureLet
+                replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '000000000000000D99') END, '.', ',') AS Debit,
+                replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '000000000000000D99') END, '.', ',') AS Credit,
+                substring(replace(replace(am.name, '|', '-'), E'\t', ''), position('/' in am.name) + 1, 20) AS PieceRef,
+                CASE WHEN rec.id IS NULL THEN ''::text ELSE rec.id::text END AS EcritureLet
+            FROM account_move_line aml
+            JOIN account_move am ON am.id = aml.move_id
+            JOIN account_journal aj ON aj.id = aml.journal_id
+            JOIN account_account aa ON aa.id = aml.account_id
+            LEFT JOIN res_partner rp ON rp.id = aml.partner_id
+            LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
+            WHERE
+                aml.company_id IN %(branch_ids)s
+                AND am.state = 'posted'
+                AND am.date >= %(date_from)s
+                AND am.date <= %(date_to)s
+                AND aj.code = 'CABA'
+                AND substring(aa.code_store->>%(company_root_id)s, 1, 3) = '445'
+                AND (aml.debit != 0 OR aml.credit != 0)
             """,
-            journal_alias=journal_alias_c,
-            move_alias=move_alias_c,
-            partner_alias=partner_alias_c,
-            rec_alias=rec_alias_c,
-            aa_code=aa_code_c,
-            aa_name=aa_name_c,
-        )
-        self.env.flush_all()
-        self._cr.execute(query_caba.select(columns_caba))
+            company_root_id=company_root_id,
+            branch_ids=branch_ids,
+            date_from=self.date_from,
+            date_to=self.date_to,
+        ))
         for row in self._cr.fetchall():
             rows_to_write.append(list(row))
-
         # ---------------------------------------------------------------
         # Écriture du fichier
         # ---------------------------------------------------------------
