@@ -14,6 +14,10 @@ from odoo.tools import float_is_zero, SQL
 class L10nFrFecExportWizardXenon(models.TransientModel):
     _inherit = 'l10n_fr.fec.export.wizard'
 
+    # fec_data absent du modèle v18 - on l'ajoute pour stocker le fichier cabinet
+    fec_data = fields.Binary('FEC Cabinet File', readonly=True, attachment=False)
+    # filename existe déjà sur le parent, pas besoin de le redéclarer
+
     # -------------------------------------------------------------------------
     # Helpers
     # -------------------------------------------------------------------------
