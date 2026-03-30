@@ -258,12 +258,16 @@ class XenonSaleOrder(models.Model):
     @api.depends('order_line.price_subtotal')
     def _amount_filtre(self):
         """
-        Compute the total amounts of the SO si le type d'article est produit ou le groupe d'article est sous-traitance.
+        Compute the total amounts of the SO si le type d'article est produit
+        ou le groupe d'article est sous-traitance.
         """
         for order in self:
             x_amount_filtre = 0.0
             for line in order.order_line:
-                if line.product_template_id.type=='product' or line.product_template_id.categ_id.x_filtre==True:
+                if (
+                    line.product_template_id.type == 'consu'
+                    and line.product_template_id.is_storable
+                ) or line.product_template_id.categ_id.x_filtre:
                     x_amount_filtre += line.price_subtotal
             order.update({
                 'x_amount_filtre': x_amount_filtre,
