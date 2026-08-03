@@ -21,6 +21,7 @@ que pour les produits en coût réel/FIFO/AVCO (valorisation automatique).
     'depends': ['stock_account'],
     'data': [
         'security/ir.model.access.csv',
+        'reports/stock_valuation_comparison_report.xml',
         'views/stock_valuation_comparison_views.xml',
     ],
     'installable': True,

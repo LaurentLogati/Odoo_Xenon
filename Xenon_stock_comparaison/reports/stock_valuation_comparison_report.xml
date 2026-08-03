@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Action d'impression -->
+    <record id="action_report_stock_valuation_comparison" model="ir.actions.report">
+        <field name="name">Comparaison de valorisation de stock</field>
+        <field name="model">stock.valuation.comparison.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Xenon_stock_comparaison.report_stock_valuation_comparison_template</field>
+        <field name="report_file">Xenon_stock_comparaison.report_stock_valuation_comparison_template</field>
+        <field name="print_report_name">'Comparaison Stock %s - %s' % (object.date_from, object.date_to)</field>
+    </record>
+
+    <!-- Template QWeb -->
+    <template id="report_stock_valuation_comparison_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <style>
+                            @page { size: A3 landscape; margin: 1cm; }
+                            .report-table { width: 100%; border-collapse: collapse; font-size: 8px; }
+                            .report-table th {
+                                background-color: #1F497D;
+                                color: white;
+                                text-align: center;
+                                padding: 4px 3px;
+                                border: 1px solid #aaa;
+                                white-space: nowrap;
+                            }
+                            .report-table td {
+                                padding: 3px 4px;
+                                border: 1px solid #ddd;
+                                white-space: nowrap;
+                            }
+                            .report-table .text-right { text-align: right; }
+                            .report-table .text-danger { color: #dc3545; font-weight: bold; }
+                            .report-table .row-total td {
+                                font-weight: bold;
+                                border-top: 2px solid #333;
+                                background-color: #f5f5f5;
+                            }
+                            .report-header { margin-bottom: 12px; }
+                            .report-header h4 { margin: 0 0 6px 0; }
+                        </style>
+
+                        <div class="report-header">
+                            <h4>Comparaison de valorisation de stock</h4>
+                            <table style="font-size:10px;">
+                                <tr>
+                                    <td><strong>Société :</strong></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.company_id.name"/></td>
+                                    <td style="padding-left:24px;"><strong>Date 1 :</strong></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.date_from"/></td>
+                                    <td style="padding-left:24px;"><strong>Date 2 :</strong></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.date_to"/></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <!-- Article -->
+                                    <th rowspan="2">Référence</th>
+                                    <th rowspan="2">Article</th>
+                                    <!-- Date 1 -->
+                                    <th colspan="3" style="background-color:#2E5FA3;">Stock date 1</th>
+                                    <!-- Période -->
+                                    <th colspan="3" style="background-color:#375623;">Mouvements période</th>
+                                    <!-- Date 2 -->
+                                    <th colspan="3" style="background-color:#2E5FA3;">Stock date 2</th>
+                                    <!-- Écart + Ajustements -->
+                                    <th rowspan="2">Écart qté</th>
+                                    <th rowspan="2">Ajust. inventaire</th>
+                                </tr>
+                                <tr>
+                                    <th>Qté</th><th>Coût U.</th><th>Valeur</th>
+                                    <th>Reçue</th><th>Livrée</th><th>Théorique</th>
+                                    <th>Qté</th><th>Coût U.</th><th>Valeur</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-set="tot_qty1"  t-value="0"/>
+                                <t t-set="tot_val1"  t-value="0"/>
+                                <t t-set="tot_in"    t-value="0"/>
+                                <t t-set="tot_out"   t-value="0"/>
+                                <t t-set="tot_theo"  t-value="0"/>
+                                <t t-set="tot_qty2"  t-value="0"/>
+                                <t t-set="tot_val2"  t-value="0"/>
+                                <t t-set="tot_gap"   t-value="0"/>
+                                <t t-set="tot_adj"   t-value="0"/>
+
+                                <t t-foreach="wizard.line_ids" t-as="line">
+                                    <t t-set="tot_qty1" t-value="tot_qty1 + line.qty_date1"/>
+                                    <t t-set="tot_val1" t-value="tot_val1 + line.value_date1"/>
+                                    <t t-set="tot_in"   t-value="tot_in   + line.qty_in"/>
+                                    <t t-set="tot_out"  t-value="tot_out  + line.qty_out"/>
+                                    <t t-set="tot_theo" t-value="tot_theo + line.qty_theoretical"/>
+                                    <t t-set="tot_qty2" t-value="tot_qty2 + line.qty_date2"/>
+                                    <t t-set="tot_val2" t-value="tot_val2 + line.value_date2"/>
+                                    <t t-set="tot_gap"  t-value="tot_gap  + line.qty_gap"/>
+                                    <t t-set="tot_adj"  t-value="tot_adj  + line.qty_adjustment"/>
+                                    <tr>
+                                        <td><t t-out="line.product_code or ''"/></td>
+                                        <td><t t-out="line.product_id.name"/></td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_date1"/></td>
+                                        <td class="text-right"><t t-out="'%.4f' % line.cost_date1"/></td>
+                                        <td class="text-right"><t t-out="'%.2f' % line.value_date1"/></td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_in"/></td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_out"/></td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_theoretical"/></td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_date2"/></td>
+                                        <td class="text-right"><t t-out="'%.4f' % line.cost_date2"/></td>
+                                        <td class="text-right"><t t-out="'%.2f' % line.value_date2"/></td>
+                                        <td class="text-right">
+                                            <span t-att-class="'text-danger' if line.qty_gap != 0 else ''">
+                                                <t t-out="'%.3f' % line.qty_gap"/>
+                                            </span>
+                                        </td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_adjustment"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr class="row-total">
+                                    <td colspan="2"><strong>TOTAL</strong></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_qty1"/></td>
+                                    <td></td>
+                                    <td class="text-right"><t t-out="'%.2f' % tot_val1"/></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_in"/></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_out"/></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_theo"/></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_qty2"/></td>
+                                    <td></td>
+                                    <td class="text-right"><t t-out="'%.2f' % tot_val2"/></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_gap"/></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_adj"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
