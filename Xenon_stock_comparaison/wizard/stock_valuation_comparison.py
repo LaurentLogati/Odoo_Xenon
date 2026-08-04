@@ -14,16 +14,77 @@ class StockValuationComparisonWizard(models.TransientModel):
     company_id = fields.Many2one(
         'res.company', string="Société",
         default=lambda self: self.env.company, required=True)
+    analytic_account_ids = fields.Many2many(
+        'account.analytic.account',
+        string="Codes analytiques",
+        help="Si renseigné, seuls les produits dont les mouvements de stock sont "
+             "liés à TOUS ces codes (vente, achat, facture) apparaissent dans les résultats.",
+    )
     line_ids = fields.One2many(
         'stock.valuation.comparison.line', 'wizard_id', string="Résultat")
 
+    def _analytic_product_filter_sql(self):
+        """Retourne un fragment SQL (et ses params) pour filtrer les produits
+        dont les mouvements sont liés à TOUS les codes analytiques sélectionnés.
+
+        Stratégie ET : pour chaque code analytique, on collecte les product_id
+        concernés (via commande vente, commande achat ou facture), puis on
+        intersecte — seuls les produits présents dans toutes les sous-listes
+        passent le filtre.
+
+        Retourne (sql_fragment, params) où sql_fragment est soit une chaîne
+        vide (pas de filtre) soit " AND svl.product_id IN (...) ".
+        """
+        analytic_ids = self.analytic_account_ids.ids
+        if not analytic_ids:
+            return '', {}
+
+        # Pour chaque compte analytique, sous-requête des product_id liés
+        # (union des 3 sources : vente, achat, facture)
+        subqueries = []
+        params = {}
+        for idx, analytic_id in enumerate(analytic_ids):
+            key = 'analytic_%d' % idx
+            params[key] = str(analytic_id)
+            subqueries.append("""
+                SELECT DISTINCT sm2.product_id
+                FROM stock_move sm2
+                LEFT JOIN sale_order_line sol
+                       ON sol.id = sm2.sale_line_id
+                LEFT JOIN purchase_order_line pol
+                       ON pol.id = sm2.purchase_line_id
+                WHERE (
+                    (sol.analytic_distribution IS NOT NULL
+                        AND sol.analytic_distribution::jsonb ? %%(%s)s)
+                    OR
+                    (pol.analytic_distribution IS NOT NULL
+                        AND pol.analytic_distribution::jsonb ? %%(%s)s)
+                )
+                UNION
+                SELECT DISTINCT svl2.product_id
+                FROM stock_valuation_layer svl2
+                JOIN account_move_line aml
+                  ON aml.id = svl2.account_move_line_id
+                WHERE aml.analytic_distribution IS NOT NULL
+                  AND aml.analytic_distribution::jsonb ? %%(%s)s
+            """ % (key, key, key))
+
+        # INTERSECT de toutes les sous-requêtes → produits liés à TOUS les codes
+        intersect_sql = ' INTERSECT '.join(subqueries)
+        sql_fragment = ' AND svl.product_id IN (%s) ' % intersect_sql
+        return sql_fragment, params
+
     def action_compute(self):
         """Calcule la comparaison de stock entre date_from et date_to
-        pour tous les articles ayant eu de l'activité de valorisation."""
+        pour tous les articles ayant eu de l'activité de valorisation.
+        Si des codes analytiques sont sélectionnés, seuls les produits liés
+        à TOUS ces codes (vente, achat, facture) sont inclus."""
         self.ensure_one()
         self.line_ids.unlink()
 
-        self.env.cr.execute("""
+        analytic_sql, analytic_params = self._analytic_product_filter_sql()
+
+        query = """
             WITH svl_data AS (
                 SELECT
                     svl.product_id   AS product_id,
@@ -38,6 +99,7 @@ class StockValuationComparisonWizard(models.TransientModel):
                 LEFT JOIN stock_location spl ON spl.id = sm.location_id
                 LEFT JOIN stock_location dpl ON dpl.id = sm.location_dest_id
                 WHERE svl.company_id = %(company_id)s
+                {analytic_filter}
             )
             SELECT
                 product_id,
@@ -74,11 +136,16 @@ class StockValuationComparisonWizard(models.TransientModel):
                 OR COALESCE(SUM(quantity) FILTER (
                     WHERE create_date::date > %(date1)s
                       AND create_date::date <= %(date2)s), 0) != 0
-        """, {
+        """.format(analytic_filter=analytic_sql)
+
+        query_params = {
             'company_id': self.company_id.id,
             'date1': self.date_from,
             'date2': self.date_to,
-        })
+        }
+        query_params.update(analytic_params)
+
+        self.env.cr.execute(query, query_params)
         rows = self.env.cr.dictfetchall()
 
         lines_vals = []
@@ -170,6 +237,15 @@ class StockValuationComparisonWizard(models.TransientModel):
         ws.write(3, 0, 'Date 2 :', label_fmt)
         ws.write(3, 1, str(self.date_to))
 
+        # Ligne optionnelle codes analytiques
+        if self.analytic_account_ids:
+            analytic_names = ', '.join(self.analytic_account_ids.mapped('name'))
+            ws.write(4, 0, 'Codes analytiques :', label_fmt)
+            ws.merge_range(4, 1, 4, num_cols - 1, analytic_names)
+            header_row = 6
+        else:
+            header_row = 5
+
         # ── En-têtes colonnes ─────────────────────────────────────────────────
         headers = [
             'Référence', 'Article',
@@ -180,12 +256,12 @@ class StockValuationComparisonWizard(models.TransientModel):
         ]
         col_widths = [16, 32, 12, 14, 16, 12, 12, 14, 12, 14, 16, 12, 16]
         for col, (h, w) in enumerate(zip(headers, col_widths)):
-            ws.write(5, col, h, header_fmt)
+            ws.write(header_row, col, h, header_fmt)
             ws.set_column(col, col, w)
-        ws.set_row(5, 30)
+        ws.set_row(header_row, 30)
 
         # ── Données ───────────────────────────────────────────────────────────
-        row = 6
+        row = header_row + 1
         tot = {f: 0.0 for f in [
             'qty_date1', 'value_date1', 'qty_in', 'qty_out',
             'qty_theoretical', 'qty_date2', 'value_date2',

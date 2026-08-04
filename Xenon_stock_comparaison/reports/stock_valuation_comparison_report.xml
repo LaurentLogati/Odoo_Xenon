@@ -55,6 +55,14 @@
                                     <td style="padding-left:24px;"><strong>Date 2 :</strong></td>
                                     <td style="padding-left:8px;"><t t-out="wizard.date_to"/></td>
                                 </tr>
+                                <t t-if="wizard.analytic_account_ids">
+                                    <tr>
+                                        <td><strong>Codes analytiques :</strong></td>
+                                        <td colspan="5" style="padding-left:8px;">
+                                            <t t-out="', '.join(wizard.analytic_account_ids.mapped('name'))"/>
+                                        </td>
+                                    </tr>
+                                </t>
                             </table>
                         </div>
 

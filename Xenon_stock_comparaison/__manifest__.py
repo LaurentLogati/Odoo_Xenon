@@ -18,7 +18,7 @@ S'appuie sur stock.valuation.layer (historique de valorisation), donc ne fonctio
 que pour les produits en coût réel/FIFO/AVCO (valorisation automatique).
 """,
     'author': 'Custom',
-    'depends': ['stock_account'],
+    'depends': ['stock_account', 'analytic'],
     'data': [
         'security/ir.model.access.csv',
         'reports/stock_valuation_comparison_report.xml',
