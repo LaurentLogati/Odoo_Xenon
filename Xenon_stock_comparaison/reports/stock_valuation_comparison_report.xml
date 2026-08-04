@@ -8,7 +8,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">Xenon_stock_comparaison.report_stock_valuation_comparison_template</field>
         <field name="report_file">Xenon_stock_comparaison.report_stock_valuation_comparison_template</field>
-        <field name="print_report_name">'Comparaison Stock %s - %s' % (object.date_from, object.date_to)</field>
+        <field name="print_report_name">'Comparaison Stock %s - %s' % (object.date_from or 'debut', object.date_to or 'fin')</field>
     </record>
 
     <!-- Template QWeb -->
@@ -35,6 +35,7 @@
                             }
                             .report-table .text-right { text-align: right; }
                             .report-table .text-danger { color: #dc3545; font-weight: bold; }
+                            .report-table .row-negative td { color: #dc3545; }
                             .report-table .row-total td {
                                 font-weight: bold;
                                 border-top: 2px solid #333;
@@ -51,9 +52,9 @@
                                     <td><strong>Société :</strong></td>
                                     <td style="padding-left:8px;"><t t-out="wizard.company_id.name"/></td>
                                     <td style="padding-left:24px;"><strong>Date 1 :</strong></td>
-                                    <td style="padding-left:8px;"><t t-out="wizard.date_from"/></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.date_from or '-'"/></td>
                                     <td style="padding-left:24px;"><strong>Date 2 :</strong></td>
-                                    <td style="padding-left:8px;"><t t-out="wizard.date_to"/></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.date_to or '-'"/></td>
                                 </tr>
                                 <t t-if="wizard.analytic_account_ids">
                                     <tr>
@@ -109,7 +110,7 @@
                                     <t t-set="tot_val2" t-value="tot_val2 + line.value_date2"/>
                                     <t t-set="tot_gap"  t-value="tot_gap  + line.qty_gap"/>
                                     <t t-set="tot_adj"  t-value="tot_adj  + line.qty_adjustment"/>
-                                    <tr>
+                                    <tr t-att-class="'row-negative' if line.qty_date2 &lt; 0 else ''">
                                         <td><t t-out="line.product_code or ''"/></td>
                                         <td><t t-out="line.product_id.name"/></td>
                                         <td class="text-right"><t t-out="'%.3f' % line.qty_date1"/></td>

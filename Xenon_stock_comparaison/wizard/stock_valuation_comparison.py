@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 import base64
 import io
-from datetime import datetime
+from datetime import datetime, date as date_cls
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 
 class StockValuationComparisonWizard(models.TransientModel):
     _name = 'stock.valuation.comparison.wizard'
     _description = "Comparaison de valorisation de stock entre 2 dates"
 
-    date_from = fields.Date(string="Date 1", required=True)
-    date_to = fields.Date(string="Date 2", required=True)
+    date_from = fields.Date(string="Date 1", required=False)
+    date_to = fields.Date(string="Date 2", required=False)
     company_id = fields.Many2one(
         'res.company', string="Société",
         default=lambda self: self.env.company, required=True)
@@ -18,19 +19,27 @@ class StockValuationComparisonWizard(models.TransientModel):
         'account.analytic.account',
         string="Codes analytiques",
         help="Si renseigné, seuls les produits dont les mouvements de stock sont "
-             "liés à TOUS ces codes (vente, achat, facture) apparaissent dans les résultats.",
+             "liés à AU MOINS UN de ces codes (vente, achat, facture) apparaissent dans les résultats.",
     )
     line_ids = fields.One2many(
         'stock.valuation.comparison.line', 'wizard_id', string="Résultat")
 
+    def _get_effective_dates(self):
+        """Retourne (date_from, date_to) en appliquant des valeurs par défaut si non renseignées.
+        - date_from absente → 1900-01-01 (= depuis le début des temps)
+        - date_to absente   → date du jour
+        """
+        date_from = self.date_from or date_cls(1900, 1, 1)
+        date_to = self.date_to or fields.Date.today()
+        return date_from, date_to
+
     def _analytic_product_filter_sql(self):
         """Retourne un fragment SQL (et ses params) pour filtrer les produits
-        dont les mouvements sont liés à TOUS les codes analytiques sélectionnés.
+        dont les mouvements sont liés à AU MOINS UN des codes analytiques sélectionnés.
 
-        Stratégie ET : pour chaque code analytique, on collecte les product_id
+        Stratégie OU : pour chaque code analytique, on collecte les product_id
         concernés (via commande vente, commande achat ou facture), puis on
-        intersecte — seuls les produits présents dans toutes les sous-listes
-        passent le filtre.
+        fait l'union — tout produit lié à au moins un des codes passe le filtre.
 
         Retourne (sql_fragment, params) où sql_fragment est soit une chaîne
         vide (pas de filtre) soit " AND svl.product_id IN (...) ".
@@ -69,17 +78,29 @@ class StockValuationComparisonWizard(models.TransientModel):
                   AND aml.analytic_distribution::jsonb ? %%(%s)s
             """ % (key, key, key))
 
-        # INTERSECT de toutes les sous-requêtes → produits liés à TOUS les codes
-        intersect_sql = ' INTERSECT '.join(subqueries)
-        sql_fragment = ' AND svl.product_id IN (%s) ' % intersect_sql
+        # UNION de toutes les sous-requêtes → produits liés à AU MOINS UN code
+        union_sql = ' UNION '.join(subqueries)
+        sql_fragment = ' AND svl.product_id IN (%s) ' % union_sql
         return sql_fragment, params
 
     def action_compute(self):
         """Calcule la comparaison de stock entre date_from et date_to
         pour tous les articles ayant eu de l'activité de valorisation.
         Si des codes analytiques sont sélectionnés, seuls les produits liés
-        à TOUS ces codes (vente, achat, facture) sont inclus."""
+        à TOUS ces codes (vente, achat, facture) sont inclus.
+        Les dates sont optionnelles si un filtre analytique est utilisé."""
         self.ensure_one()
+
+        # Validation : sans filtre analytique, les deux dates sont obligatoires
+        if not self.analytic_account_ids:
+            if not self.date_from or not self.date_to:
+                raise UserError(
+                    "Veuillez renseigner les deux dates (Date 1 et Date 2), "
+                    "ou utiliser un filtre analytique pour vous en affranchir."
+                )
+
+        date_from, date_to = self._get_effective_dates()
+
         self.line_ids.unlink()
 
         analytic_sql, analytic_params = self._analytic_product_filter_sql()
@@ -140,8 +161,8 @@ class StockValuationComparisonWizard(models.TransientModel):
 
         query_params = {
             'company_id': self.company_id.id,
-            'date1': self.date_from,
-            'date2': self.date_to,
+            'date1': date_from,
+            'date2': date_to,
         }
         query_params.update(analytic_params)
 
@@ -194,6 +215,8 @@ class StockValuationComparisonWizard(models.TransientModel):
         self.ensure_one()
         import xlsxwriter  # disponible dans Odoo
 
+        date_from, date_to = self._get_effective_dates()
+
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         ws = workbook.add_worksheet('Comparaison Stock')
@@ -225,6 +248,16 @@ class StockValuationComparisonWizard(models.TransientModel):
         })
         total_label_fmt = workbook.add_format({'bold': True, 'top': 2})
 
+        # ── Formats pour lignes négatives (qty_date2 < 0) ────────────────────
+        red_text_fmt  = workbook.add_format({'font_color': 'red'})
+        red_qty_fmt   = workbook.add_format({'num_format': '#,##0.000', 'align': 'right', 'font_color': 'red'})
+        red_cost_fmt  = workbook.add_format({'num_format': '#,##0.0000', 'align': 'right', 'font_color': 'red'})
+        red_money_fmt = workbook.add_format({'num_format': '#,##0.00', 'align': 'right', 'font_color': 'red'})
+        red_gap_fmt   = workbook.add_format({
+            'num_format': '#,##0.000', 'align': 'right',
+            'font_color': 'red', 'bold': True,
+        })
+
         # ── En-tête du document ───────────────────────────────────────────────
         num_cols = 13
         ws.merge_range(0, 0, 0, num_cols - 1,
@@ -233,9 +266,9 @@ class StockValuationComparisonWizard(models.TransientModel):
         ws.write(1, 0, 'Société :', label_fmt)
         ws.write(1, 1, self.company_id.name)
         ws.write(2, 0, 'Date 1 :', label_fmt)
-        ws.write(2, 1, str(self.date_from))
+        ws.write(2, 1, str(self.date_from) if self.date_from else str(date_from))
         ws.write(3, 0, 'Date 2 :', label_fmt)
-        ws.write(3, 1, str(self.date_to))
+        ws.write(3, 1, str(self.date_to) if self.date_to else str(date_to))
 
         # Ligne optionnelle codes analytiques
         if self.analytic_account_ids:
@@ -268,20 +301,26 @@ class StockValuationComparisonWizard(models.TransientModel):
             'qty_gap', 'qty_adjustment',
         ]}
         for line in self.line_ids:
-            ws.write(row, 0, line.product_code or '')
-            ws.write(row, 1, line.product_id.name or '')
-            ws.write_number(row, 2, line.qty_date1, qty_fmt)
-            ws.write_number(row, 3, line.cost_date1, cost_fmt)
-            ws.write_number(row, 4, line.value_date1, money_fmt)
-            ws.write_number(row, 5, line.qty_in, qty_fmt)
-            ws.write_number(row, 6, line.qty_out, qty_fmt)
-            ws.write_number(row, 7, line.qty_theoretical, qty_fmt)
-            ws.write_number(row, 8, line.qty_date2, qty_fmt)
-            ws.write_number(row, 9, line.cost_date2, cost_fmt)
-            ws.write_number(row, 10, line.value_date2, money_fmt)
-            ws.write_number(row, 11, line.qty_gap,
-                            gap_fmt if line.qty_gap != 0 else qty_fmt)
-            ws.write_number(row, 12, line.qty_adjustment, qty_fmt)
+            is_red = line.qty_date2 < 0
+            f_text  = red_text_fmt  if is_red else None
+            f_qty   = red_qty_fmt   if is_red else qty_fmt
+            f_cost  = red_cost_fmt  if is_red else cost_fmt
+            f_money = red_money_fmt if is_red else money_fmt
+            f_gap   = red_gap_fmt   if is_red or line.qty_gap != 0 else qty_fmt
+
+            ws.write(row, 0, line.product_code or '', f_text)
+            ws.write(row, 1, line.product_id.name or '', f_text)
+            ws.write_number(row, 2, line.qty_date1, f_qty)
+            ws.write_number(row, 3, line.cost_date1, f_cost)
+            ws.write_number(row, 4, line.value_date1, f_money)
+            ws.write_number(row, 5, line.qty_in, f_qty)
+            ws.write_number(row, 6, line.qty_out, f_qty)
+            ws.write_number(row, 7, line.qty_theoretical, f_qty)
+            ws.write_number(row, 8, line.qty_date2, f_qty)
+            ws.write_number(row, 9, line.cost_date2, f_cost)
+            ws.write_number(row, 10, line.value_date2, f_money)
+            ws.write_number(row, 11, line.qty_gap, f_gap)
+            ws.write_number(row, 12, line.qty_adjustment, f_qty)
             for f in tot:
                 tot[f] += getattr(line, f)
             row += 1
@@ -304,7 +343,9 @@ class StockValuationComparisonWizard(models.TransientModel):
         workbook.close()
         output.seek(0)
 
-        filename = 'comparaison_stock_%s_%s.xlsx' % (self.date_from, self.date_to)
+        date_from_str = str(self.date_from) if self.date_from else str(date_from)
+        date_to_str = str(self.date_to) if self.date_to else str(date_to)
+        filename = 'comparaison_stock_%s_%s.xlsx' % (date_from_str, date_to_str)
         attachment = self.env['ir.attachment'].create({
             'name': filename,
             'datas': base64.b64encode(output.read()),
@@ -390,7 +431,7 @@ class StockValuationComparisonLine(models.TransientModel):
     def action_view_svl_date1(self):
         """Couches de valorisation cumulées au date 1."""
         self.ensure_one()
-        d1 = self.wizard_id.date_from
+        d1, _d2 = self.wizard_id._get_effective_dates()
         return self._action_view_svl(
             [('create_date', '<=', self._end_of_day(d1))],
             ' — Stock au %s' % fields.Date.to_string(d1),
@@ -399,8 +440,7 @@ class StockValuationComparisonLine(models.TransientModel):
     def action_view_svl_period(self):
         """Couches de valorisation entre date 1 et date 2."""
         self.ensure_one()
-        d1 = self.wizard_id.date_from
-        d2 = self.wizard_id.date_to
+        d1, d2 = self.wizard_id._get_effective_dates()
         return self._action_view_svl(
             [
                 ('create_date', '>', self._end_of_day(d1)),
@@ -412,7 +452,7 @@ class StockValuationComparisonLine(models.TransientModel):
     def action_view_svl_date2(self):
         """Couches de valorisation cumulées au date 2."""
         self.ensure_one()
-        d2 = self.wizard_id.date_to
+        _d1, d2 = self.wizard_id._get_effective_dates()
         return self._action_view_svl(
             [('create_date', '<=', self._end_of_day(d2))],
             ' — Stock au %s' % fields.Date.to_string(d2),
@@ -421,8 +461,7 @@ class StockValuationComparisonLine(models.TransientModel):
     def action_view_svl_adjustment(self):
         """Ajustements d'inventaire (mouvements depuis/vers emplacement inventaire) sur la période."""
         self.ensure_one()
-        d1 = self.wizard_id.date_from
-        d2 = self.wizard_id.date_to
+        d1, d2 = self.wizard_id._get_effective_dates()
         dt1 = self._end_of_day(d1)
         dt2 = self._end_of_day(d2)
         domain = [
