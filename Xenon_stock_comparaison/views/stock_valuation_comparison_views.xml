@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_stock_valuation_comparison_wizard_form" model="ir.ui.view">
+        <field name="name">stock.valuation.comparison.wizard.form</field>
+        <field name="model">stock.valuation.comparison.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Comparaison de valorisation de stock">
+                <group>
+                    <group>
+                        <field name="date_from" required="not analytic_account_ids"/>
+                        <field name="date_to" required="not analytic_account_ids"/>
+                    </group>
+                    <group>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="analytic_account_ids" widget="many2many_tags"
+                           options="{'no_create': True}"
+                           placeholder="Laisser vide pour inclure tous les articles…"/>
+                </group>
+                <div class="d-flex gap-2 mb-3">
+                    <button name="action_compute" type="object"
+                            string="Calculer" class="btn-primary"/>
+                    <button name="action_export_excel" type="object"
+                            string="Export Excel" class="btn-secondary"
+                            icon="fa-file-excel-o"
+                            invisible="not line_ids"/>
+                    <button name="action_print_report" type="object"
+                            string="Imprimer PDF" class="btn-secondary"
+                            icon="fa-print"
+                            invisible="not line_ids"/>
+                </div>
+                <field name="line_ids" invisible="not line_ids">
+                    <list create="false" delete="false" edit="false" editable="bottom"
+                          decoration-danger="qty_date2 &lt; 0">
+                        <!-- Article : libellé (cliquable via Many2one) + référence + bouton ouvrir -->
+                        <field name="product_id"/>
+                        <field name="product_code"/>
+                        <button name="action_open_product" type="object"
+                                icon="fa-external-link"
+                                title="Ouvrir la fiche article"/>
+                        <!-- Stock à la date 1 + détail -->
+                        <field name="qty_date1" sum="Total"/>
+                        <field name="cost_date1"/>
+                        <field name="value_date1" sum="Total"/>
+                        <button name="action_view_svl_date1" type="object"
+                                icon="fa-list-ul"
+                                title="Détail des mouvements au date 1"/>
+                        <!-- Réceptions / Livraisons / Qté théorique + détail -->
+                        <field name="qty_in" sum="Total"/>
+                        <field name="qty_out" sum="Total"/>
+                        <field name="qty_theoretical" sum="Total"/>
+                        <button name="action_view_svl_period" type="object"
+                                icon="fa-list-ul"
+                                title="Détail des réceptions et livraisons de la période"/>
+                        <!-- Stock à la date 2 + détail -->
+                        <field name="qty_date2" sum="Total"/>
+                        <field name="cost_date2"/>
+                        <field name="value_date2" sum="Total"/>
+                        <button name="action_view_svl_date2" type="object"
+                                icon="fa-list-ul"
+                                title="Détail des mouvements au date 2"/>
+                        <!-- Écart + Ajustements inventaire + détail -->
+                        <field name="qty_gap" sum="Total"
+                               decoration-danger="qty_gap != 0"/>
+                        <field name="qty_adjustment" sum="Total"/>
+                        <button name="action_view_svl_adjustment" type="object"
+                                icon="fa-list-ul"
+                                title="Détail des ajustements d'inventaire de la période"/>
+                        <field name="currency_id" column_invisible="1"/>
+                    </list>
+                </field>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_valuation_comparison_wizard" model="ir.actions.act_window">
+        <field name="name">Comparaison de valorisation de stock</field>
+        <field name="res_model">stock.valuation.comparison.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_stock_valuation_comparison"
+              name="Comparaison de valorisation entre 2 dates"
+              parent="stock.menu_warehouse_report"
+              action="action_stock_valuation_comparison_wizard"
+              sequence="90"/>
+
+</odoo>

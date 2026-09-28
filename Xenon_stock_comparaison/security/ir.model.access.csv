@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stock_valuation_comparison_wizard,stock.valuation.comparison.wizard,model_stock_valuation_comparison_wizard,stock.group_stock_user,1,1,1,1
+access_stock_valuation_comparison_line,stock.valuation.comparison.line,model_stock_valuation_comparison_line,stock.group_stock_user,1,1,1,1
