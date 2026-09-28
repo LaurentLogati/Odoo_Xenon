@@ -351,7 +351,9 @@ class XenonSaleOrderLine(models.Model):
 
             # determine (or create) PO
             cde_origine = line.order_id.name ###LLO
-            purchase_order = supplier_po_map.get(partner_supplier.id)
+            # LLO 2026-09 : clé (fournisseur, devis) pour ne jamais mélanger deux devis traités dans le même appel
+            po_key = (partner_supplier.id, line.order_id.id)
+            purchase_order = supplier_po_map.get(po_key)
             if not purchase_order:
                 purchase_order = line._match_or_create_purchase_order(supplierinfo)
                 #purchase_order = PurchaseOrder.search([
@@ -371,7 +373,7 @@ class XenonSaleOrderLine(models.Model):
                 if so_name not in origins:
                     purchase_order.write({'origin': ', '.join(origins + [so_name])})
                    
-            supplier_po_map[partner_supplier.id] = purchase_order
+            supplier_po_map[po_key] = purchase_order
 
             # add a PO line to the PO
             values = line._purchase_service_prepare_line_values(purchase_order, quantity=quantity)
@@ -383,6 +385,28 @@ class XenonSaleOrderLine(models.Model):
             sale_line_purchase_map.setdefault(line, line.env['purchase.order.line'])
             sale_line_purchase_map[line] |= purchase_line
         return sale_line_purchase_map
+
+    def _match_or_create_purchase_order(self, supplierinfo):
+        """ LLO 2026-09 : surcharge du standard sale_purchase (v17+).
+            Le standard réutilise N'IMPORTE QUELLE demande de prix en brouillon du fournisseur
+            (même société), ce qui mélange plusieurs devis dans une même demande de prix
+            (cas P08714 : fournisseur DIVERS, 5 devis).
+            Règle Xenon : 1 devis de vente = 1 demande de prix par fournisseur,
+            identifiée par origin = nom du devis (cohérent avec Xenon_sale.py qui recherche
+            les demandes de prix par ('origin', '=', order.name)).
+        """
+        self.ensure_one()
+        purchase_order = self.env['purchase.order'].search([
+            ('partner_id', '=', supplierinfo.partner_id.id),
+            ('state', '=', 'draft'),
+            ('company_id', '=', self.company_id.id),
+            ('origin', '=', self.order_id.name),
+        ], limit=1)
+        if not purchase_order:
+            values = self._purchase_service_prepare_order_values(supplierinfo)
+            purchase_order = self.env['purchase.order'].with_context(
+                mail_create_nosubscribe=True).create(values)
+        return purchase_order
 
     def _purchase_service_generation(self):
         """ Create a Purchase for the first time from the sale line. If the SO line already created a PO, it
