@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Action d'impression -->
+    <record id="action_report_account_stock_variation" model="ir.actions.report">
+        <field name="name">Analyse de variation de stock</field>
+        <field name="model">account.stock.variation.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Xenon_analyse_stock_compta.report_account_stock_variation_template</field>
+        <field name="report_file">Xenon_analyse_stock_compta.report_account_stock_variation_template</field>
+        <field name="print_report_name">'Variation Stock %s - %s' % (object.date_from, object.date_to)</field>
+    </record>
+
+    <!-- Template QWeb -->
+    <template id="report_account_stock_variation_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <style>
+                            @page { size: A4 landscape; margin: 1cm; }
+                            .report-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+                            .report-table th {
+                                background-color: #1F497D;
+                                color: white;
+                                text-align: center;
+                                padding: 4px 3px;
+                                border: 1px solid #aaa;
+                                white-space: nowrap;
+                            }
+                            .report-table td {
+                                padding: 3px 4px;
+                                border: 1px solid #ddd;
+                                white-space: nowrap;
+                            }
+                            .report-table .text-right { text-align: right; }
+                            .report-table .row-total td {
+                                font-weight: bold;
+                                border-top: 2px solid #333;
+                                background-color: #f5f5f5;
+                            }
+                            .report-header { margin-bottom: 12px; }
+                            .report-header h4 { margin: 0 0 6px 0; }
+                        </style>
+
+                        <div class="report-header">
+                            <h4>Analyse de variation de stock</h4>
+                            <table style="font-size:10px;">
+                                <tr>
+                                    <td><strong>Société :</strong></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.company_id.name"/></td>
+                                    <td style="padding-left:24px;"><strong>Date de début :</strong></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.date_from"/></td>
+                                    <td style="padding-left:24px;"><strong>Date de fin :</strong></td>
+                                    <td style="padding-left:8px;"><t t-out="wizard.date_to"/></td>
+                                </tr>
+                                <t t-if="wizard.analytic_account_ids">
+                                    <tr>
+                                        <td><strong>Codes analytiques :</strong></td>
+                                        <td colspan="5" style="padding-left:8px;">
+                                            <t t-out="', '.join(wizard.analytic_account_ids.mapped('name'))"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </div>
+
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Référence</th>
+                                    <th>Article</th>
+                                    <th>Qté achetée</th>
+                                    <th>Qté vendue</th>
+                                    <th>Coût unitaire (achat)</th>
+                                    <th>Origine du coût</th>
+                                    <th>Variation de stock calculée</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-set="tot_purchased" t-value="0"/>
+                                <t t-set="tot_sold" t-value="0"/>
+                                <t t-set="tot_variation" t-value="0"/>
+
+                                <t t-foreach="wizard.line_ids" t-as="line">
+                                    <t t-set="tot_purchased" t-value="tot_purchased + line.qty_purchased"/>
+                                    <t t-set="tot_sold" t-value="tot_sold + line.qty_sold"/>
+                                    <t t-set="tot_variation" t-value="tot_variation + line.stock_variation"/>
+                                    <tr>
+                                        <td><t t-out="line.product_code or ''"/></td>
+                                        <td><t t-out="line.product_id.name"/></td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_purchased"/></td>
+                                        <td class="text-right"><t t-out="'%.3f' % line.qty_sold"/></td>
+                                        <td class="text-right"><t t-out="'%.4f' % line.cost_unit"/></td>
+                                        <td>
+                                            <t t-if="line.cost_from_product">Fiche article</t>
+                                            <t t-else="">Achat de la période</t>
+                                        </td>
+                                        <td class="text-right"><t t-out="'%.2f' % line.stock_variation"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr class="row-total">
+                                    <td colspan="2"><strong>TOTAL</strong></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_purchased"/></td>
+                                    <td class="text-right"><t t-out="'%.3f' % tot_sold"/></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="text-right"><t t-out="'%.2f' % tot_variation"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

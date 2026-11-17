@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_account_stock_variation_wizard_form" model="ir.ui.view">
+        <field name="name">account.stock.variation.wizard.form</field>
+        <field name="model">account.stock.variation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Analyse de variation de stock">
+                <group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="analytic_account_ids" widget="many2many_tags"
+                           options="{'no_create': True}"
+                           placeholder="Laisser vide pour inclure tous les codes analytiques…"/>
+                </group>
+                <div class="d-flex gap-2 mb-3">
+                    <button name="action_compute" type="object"
+                            string="Calculer" class="btn-primary"/>
+                    <button name="action_export_excel" type="object"
+                            string="Export Excel" class="btn-secondary"
+                            icon="fa-file-excel-o"
+                            invisible="not line_ids"/>
+                    <button name="action_print_report" type="object"
+                            string="Imprimer PDF" class="btn-secondary"
+                            icon="fa-print"
+                            invisible="not line_ids"/>
+                </div>
+                <field name="line_ids" invisible="not line_ids">
+                    <list create="false" delete="false" edit="false" editable="bottom">
+                        <field name="product_id"/>
+                        <field name="product_code"/>
+                        <button name="action_open_product" type="object"
+                                icon="fa-external-link"
+                                title="Ouvrir la fiche article"/>
+                        <field name="qty_purchased" sum="Total"/>
+                        <button name="action_view_purchase_lines" type="object"
+                                icon="fa-list-ul"
+                                title="Détail des achats de la période"/>
+                        <field name="qty_sold" sum="Total"/>
+                        <button name="action_view_sale_lines" type="object"
+                                icon="fa-list-ul"
+                                title="Détail des ventes de la période"/>
+                        <field name="cost_unit"
+                               decoration-muted="cost_from_product"/>
+                        <field name="cost_from_product"
+                               string="Coût fiche article"
+                               widget="boolean_toggle" readonly="1"/>
+                        <field name="stock_variation" sum="Total"/>
+                        <field name="currency_id" column_invisible="1"/>
+                    </list>
+                </field>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_account_stock_variation_wizard" model="ir.actions.act_window">
+        <field name="name">Analyse de variation de stock</field>
+        <field name="res_model">account.stock.variation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_account_stock_variation"
+              name="Analyse de variation de stock"
+              parent="account.account_reports_management_menu"
+              action="action_account_stock_variation_wizard"
+              groups="account.group_account_readonly,account.group_account_invoice"
+              sequence="20"/>
+
+</odoo>
